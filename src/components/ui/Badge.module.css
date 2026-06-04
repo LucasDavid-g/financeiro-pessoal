@@ -1,0 +1,5 @@
+.badge { display: inline-flex; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+.g { background: var(--g50); color: var(--g800); }
+.r { background: var(--r50); color: var(--r800); }
+.a { background: var(--a50); color: var(--a800); }
+.b { background: var(--b50); color: var(--b800); }

@@ -1,0 +1,20 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+}
+.full { width: 100%; justify-content: center; border-radius: var(--radius-md); padding: 11px 20px; font-size: 14px; font-weight: 500; }
+.ghost { background: transparent; border: 0.5px solid var(--color-border2); color: var(--color-text2); }
+.ghost:hover { background: var(--color-surface2); }
+.primary { background: var(--g400); color: white; }
+.primary:hover { opacity: .88; }
+.danger { background: var(--r50); color: var(--r800); border: 0.5px solid var(--r400); }
+.icon-btn { background: transparent; border: none; padding: 5px; border-radius: 6px; color: var(--color-text3); font-size: 14px; }
+.icon-btn:hover { background: var(--color-surface2); color: var(--color-text); }

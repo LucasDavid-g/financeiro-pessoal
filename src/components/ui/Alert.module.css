@@ -1,0 +1,14 @@
+.alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  margin-bottom: .75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.ok     { background: var(--g50); color: var(--g800); }
+.warn   { background: var(--a50); color: var(--a800); }
+.danger { background: var(--r50); color: var(--r800); }
+.info   { background: var(--b50); color: var(--b800); }

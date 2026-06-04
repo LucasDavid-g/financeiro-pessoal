@@ -1,0 +1,41 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 0.5px solid var(--color-border);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--g400);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 18px;
+}
+.title { font-size: 16px; font-weight: 500; letter-spacing: -.3px; }
+.sub { font-size: 11px; color: var(--color-text3); margin-top: 1px; font-family: var(--font-mono); }
+.actions { display: flex; align-items: center; gap: 8px; }
+.monthSelect {
+  font-size: 12px;
+  border-radius: 20px;
+  padding: 5px 10px;
+  width: auto;
+  background: var(--color-surface2);
+  border: 0.5px solid var(--color-border2);
+}
+.themeBtn {
+  background: transparent;
+  border: 0.5px solid var(--color-border2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--color-text2);
+  font-size: 16px;
+  transition: var(--transition);
+}
+.themeBtn:hover { background: var(--color-surface2); }
