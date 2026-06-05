@@ -1,0 +1,242 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid var(--sidebar-border);
+  min-height: 64px;
+  flex-shrink: 0;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--gradient-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--g-glow);
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.brandName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.brandSub {
+  font-size: 10px;
+  color: var(--color-text3);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+/* Nav */
+.nav {
+  flex: 1;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sectionTitle {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--color-text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--color-text2);
+  width: 100%;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.navItem:hover {
+  background: var(--color-surface2);
+  color: var(--color-text);
+}
+
+.navActive {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.06) 100%);
+  color: var(--g400);
+}
+
+.navActive:hover {
+  background: linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(5,150,105,0.10) 100%);
+  color: var(--g400);
+}
+
+.navIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+.navLabel {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.activeBar {
+  position: absolute;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--g400);
+  border-radius: 3px 0 0 3px;
+}
+
+/* Footer */
+.footer {
+  padding: 0.75rem 0.5rem 1rem;
+  border-top: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.monthWrap {
+  padding: 0 8px;
+}
+
+.monthLabel {
+  font-size: 10px;
+  color: var(--color-text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.monthSelect {
+  font-size: 12px;
+  padding: 7px 28px 7px 10px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+  width: 100%;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.themeBtn {
+  width: 34px;
+  height: 34px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text2);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.themeBtn:hover {
+  background: var(--color-surface3);
+  color: var(--color-text);
+}
+
+.userBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.userBtn:hover {
+  background: var(--color-surface3);
+  border-color: var(--color-border2);
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatarInitials {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.userName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

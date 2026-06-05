@@ -1,1 +1,41 @@
-.empty { text-align: center; padding: 2rem 1rem; color: var(--color-text3); font-size: 13px; }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 2.5rem 1rem;
+  color: var(--color-text3);
+}
+
+.compact {
+  padding: 1.25rem .5rem;
+}
+
+.iconWrap {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--color-text3);
+}
+
+.iconCompact {
+  width: 36px;
+  height: 36px;
+  font-size: 17px;
+  border-radius: var(--radius-md);
+}
+
+.empty p {
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.compact p {
+  font-size: 12px;
+}

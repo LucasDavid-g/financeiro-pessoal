@@ -1,0 +1,83 @@
+.nav {
+  display: none;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 4px 6px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 768px) {
+  .nav { display: grid; }
+}
+
+.btn {
+  padding: 8px 4px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: var(--transition);
+  border-radius: var(--radius-md);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.iconWrap {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 17px;
+  color: var(--color-text3);
+  transition: var(--transition);
+}
+
+.iconActive {
+  color: var(--g400);
+}
+
+.label {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--color-text3);
+  letter-spacing: 0.01em;
+  transition: var(--transition);
+}
+
+.active .label { color: var(--g400); font-weight: 600; }
+.active .iconWrap { color: var(--g400); }
+
+/* Botão lançar — destacado */
+.lançar { position: relative; }
+
+.lançarIcon {
+  width: 46px;
+  height: 46px;
+  background: var(--gradient-brand);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  box-shadow: 0 4px 16px var(--g-glow);
+  transition: var(--transition);
+  margin-top: -14px;
+}
+
+.lançar:hover .lançarIcon {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px var(--g-glow);
+}

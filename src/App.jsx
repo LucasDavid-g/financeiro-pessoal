@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { AppProvider } from './context/AppContext.jsx'
+import { Sidebar }     from './components/layout/Sidebar.jsx'
 import { Topbar }      from './components/layout/Topbar.jsx'
-import { Nav }         from './components/layout/Nav.jsx'
+import { MobileNav }   from './components/layout/MobileNav.jsx'
 import { Dashboard }   from './components/sections/Dashboard.jsx'
-import { Insights }    from './components/sections/Insights.jsx'
 import { Contas }      from './components/sections/Contas.jsx'
 import { Lancamentos } from './components/sections/Lancamentos.jsx'
 import { Extrato }     from './components/sections/Extrato.jsx'
@@ -23,12 +23,23 @@ function AppContent() {
 
   if (status === 'loading') {
     return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+      <div style={{
+        minHeight: '100dvh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', background: 'var(--color-bg)',
+      }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--g400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: 'white', margin: '0 auto 1rem' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 14,
+            background: 'var(--gradient-brand)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24, color: 'white', margin: '0 auto 1rem',
+            boxShadow: '0 8px 24px var(--g-glow)',
+          }}>
             <i className="ti ti-map" />
           </div>
-          <div style={{ fontSize: 12, color: 'var(--color-text3)', fontFamily: 'var(--font-mono)' }}>carregando...</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text3)', fontFamily: 'var(--font-mono)' }}>
+            carregando...
+          </div>
         </div>
       </div>
     )
@@ -36,31 +47,49 @@ function AppContent() {
 
   if (status === 'unauthed') return <Login onLogin={login} />
 
+  const sharedProps = { selYear, selMonth }
+
   const sections = {
-    dashboard:   <Dashboard   selYear={selYear} selMonth={selMonth} />,
-    insights:    <Insights    selYear={selYear} selMonth={selMonth} />,
-    contas:      <Contas      selYear={selYear} selMonth={selMonth} />,
+    dashboard:   <Dashboard   {...sharedProps} />,
+    contas:      <Contas      {...sharedProps} />,
     lancamentos: <Lancamentos />,
-    extrato:     <Extrato     selYear={selYear} selMonth={selMonth} />,
+    extrato:     <Extrato     {...sharedProps} />,
     fixos:       <Fixos />,
     metas:       <Metas />,
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <Topbar
+    <div className="app-shell">
+      <Sidebar
+        active={activeTab}
+        onChange={setActiveTab}
+        user={user}
+        onLogout={logout}
+        theme={theme}
+        onToggleTheme={toggle}
         selYear={selYear}
         selMonth={selMonth}
         onChangeMonth={setMonth}
-        onToggleTheme={toggle}
-        theme={theme}
-        user={user}
-        onLogout={logout}
       />
-      <Nav active={activeTab} onChange={setActiveTab} />
-      <main style={{ flex: 1, paddingBottom: '2rem' }}>
-        {sections[activeTab]}
-      </main>
+
+      <div className="app-body">
+        <Topbar
+          selYear={selYear}
+          selMonth={selMonth}
+          onChangeMonth={setMonth}
+          onToggleTheme={toggle}
+          theme={theme}
+          user={user}
+          onLogout={logout}
+          activeTab={activeTab}
+        />
+
+        <main className="app-main section-wrap">
+          {sections[activeTab]}
+        </main>
+
+        <MobileNav active={activeTab} onChange={setActiveTab} />
+      </div>
     </div>
   )
 }
