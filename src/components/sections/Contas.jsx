@@ -20,7 +20,7 @@ const TIPO_ICONS = {
   poupanca:     'ti-piggy-bank',
 }
 
-const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0] }
+const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0], limite: '', vencimento: '', fechamento: '' }
 const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: new Date().toISOString().slice(0, 10) }
 
 export function Contas() {
@@ -40,9 +40,25 @@ export function Contas() {
 
   const patrimonio = state.contas.reduce((s, c) => s + getContaSaldo(state, c.id), 0)
 
+  const isCartao = contaForm.tipo === 'cartao'
+
   const saveConta = () => {
     if (!contaForm.nome) return alert('Informe o nome.')
-    const payload = { nome: contaForm.nome, tipo: contaForm.tipo, saldo: parseFloat(contaForm.saldo) || 0, cor: contaForm.cor }
+    const payload = {
+      nome:  contaForm.nome,
+      tipo:  contaForm.tipo,
+      cor:   contaForm.cor,
+      // Para cartão: saldo = -(fatura atual), assim getContaSaldo retorna valor negativo (dívida)
+      saldo: isCartao
+        ? -(parseFloat(contaForm.saldo) || 0)
+        : parseFloat(contaForm.saldo) || 0,
+      // Campos exclusivos do cartão
+      ...(isCartao && {
+        limite:     parseFloat(contaForm.limite)     || 0,
+        vencimento: parseInt(contaForm.vencimento)   || null,
+        fechamento: parseInt(contaForm.fechamento)   || null,
+      }),
+    }
     if (contaForm.editId) dispatch({ type: 'EDIT_CONTA', payload: { ...payload, id: contaForm.editId } })
     else dispatch({ type: 'ADD_CONTA', payload })
     setContaModal(false)
@@ -58,7 +74,17 @@ export function Contas() {
   }
 
   const editConta = (c) => {
-    setContaForm({ nome: c.nome, tipo: c.tipo, saldo: c.saldo, cor: c.cor, editId: c.id })
+    setContaForm({
+      nome:       c.nome,
+      tipo:       c.tipo,
+      cor:        c.cor,
+      editId:     c.id,
+      // Para cartão, mostramos a fatura (positivo) — o saldo é guardado negado
+      saldo:      c.tipo === 'cartao' ? String(-c.saldo) : String(c.saldo),
+      limite:     c.limite     != null ? String(c.limite)     : '',
+      vencimento: c.vencimento != null ? String(c.vencimento) : '',
+      fechamento: c.fechamento != null ? String(c.fechamento) : '',
+    })
     setContaModal(true)
   }
 
@@ -119,10 +145,20 @@ export function Contas() {
       {state.contas.length > 0 ? (
         <div className={styles.contasGrid}>
           {state.contas.map(c => {
-            const saldo = getContaSaldo(state, c.id)
-            const stats = getContaMesStats(state, c.id, selYear, selMonth)
-            const pct   = patrimonio > 0 ? Math.round((saldo / patrimonio) * 100) : 0
-            const icon  = TIPO_ICONS[c.tipo] || 'ti-building-bank'
+            const saldo    = getContaSaldo(state, c.id)
+            const stats    = getContaMesStats(state, c.id, selYear, selMonth)
+            const icon     = TIPO_ICONS[c.tipo] || 'ti-building-bank'
+            const isCard   = c.tipo === 'cartao'
+
+            // Para cartão: saldo é negativo (dívida), fatura = valor positivo
+            const fatura   = isCard ? Math.max(0, -saldo) : 0
+            const limite   = isCard ? (c.limite || 0) : 0
+            const disponivel = isCard ? Math.max(0, limite - fatura) : 0
+            const utilizPct  = isCard && limite > 0 ? Math.min(100, Math.round((fatura / limite) * 100)) : 0
+
+            // Para contas normais: participação no patrimônio (só positivo)
+            const pct = !isCard && patrimonio > 0 ? Math.round((Math.max(0, saldo) / Math.max(1, patrimonio)) * 100) : 0
+
             return (
               <div key={c.id} className={styles.contaCard}>
                 <div className={styles.contaAccent} style={{ background: c.cor }} />
@@ -144,30 +180,90 @@ export function Contas() {
                 <div className={styles.contaName}>{c.nome}</div>
                 <div className={styles.contaTipo}>{TIPO_LABEL[c.tipo] || c.tipo}</div>
 
-                <div className={styles.contaSaldo} style={{ color: saldo >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
-                  {fmt(saldo)}
-                </div>
+                {isCard ? (
+                  /* ── Layout cartão de crédito ── */
+                  <>
+                    <div className={styles.cartaoFatura}>
+                      <span className={styles.cartaoFaturaLabel}>Fatura atual</span>
+                      <span className={styles.cartaoFaturaVal} style={{ color: fatura > 0 ? 'var(--r400)' : 'var(--color-text3)' }}>
+                        {fmt(fatura)}
+                      </span>
+                    </div>
 
-                {/* Barra de participação no patrimônio */}
-                <div className={styles.participacao}>
-                  <div className={styles.participacaoBar}>
-                    <div className={styles.participacaoFill} style={{ width: `${Math.max(0, pct)}%`, background: c.cor }} />
-                  </div>
-                  <span className={styles.participacaoPct}>{pct}% do patrimônio</span>
-                </div>
+                    {/* Barra de utilização */}
+                    {limite > 0 && (
+                      <div className={styles.participacao}>
+                        <div className={styles.participacaoBar}>
+                          <div
+                            className={styles.participacaoFill}
+                            style={{
+                              width: `${utilizPct}%`,
+                              background: utilizPct > 80 ? 'var(--r400)' : utilizPct > 50 ? 'var(--a400)' : c.cor,
+                            }}
+                          />
+                        </div>
+                        <span className={styles.participacaoPct}>{utilizPct}% do limite utilizado</span>
+                      </div>
+                    )}
 
-                {/* Stats do mês */}
-                <div className={styles.contaStats}>
-                  <div className={styles.statItem}>
-                    <span className={styles.statLabel}>Entradas</span>
-                    <span className={styles.statVal} style={{ color: 'var(--g400)' }}>{fmt(stats.entrada)}</span>
-                  </div>
-                  <div className={styles.statDivider} />
-                  <div className={styles.statItem}>
-                    <span className={styles.statLabel}>Saídas</span>
-                    <span className={styles.statVal} style={{ color: 'var(--r400)' }}>{fmt(stats.saida)}</span>
-                  </div>
-                </div>
+                    {/* Info: disponível + limite */}
+                    <div className={styles.contaStats}>
+                      <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Disponível</span>
+                        <span className={styles.statVal} style={{ color: 'var(--g400)' }}>{fmt(disponivel)}</span>
+                      </div>
+                      <div className={styles.statDivider} />
+                      <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Limite</span>
+                        <span className={styles.statVal}>{limite > 0 ? fmt(limite) : '—'}</span>
+                      </div>
+                    </div>
+
+                    {/* Chips de vencimento / fechamento */}
+                    {(c.vencimento || c.fechamento) && (
+                      <div className={styles.cartaoChips}>
+                        {c.vencimento && (
+                          <span className={styles.cartaoChip}>
+                            <i className="ti ti-calendar-due" />
+                            Vence dia {c.vencimento}
+                          </span>
+                        )}
+                        {c.fechamento && (
+                          <span className={styles.cartaoChip}>
+                            <i className="ti ti-calendar-x" />
+                            Fecha dia {c.fechamento}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* ── Layout conta normal ── */
+                  <>
+                    <div className={styles.contaSaldo} style={{ color: saldo >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
+                      {fmt(saldo)}
+                    </div>
+
+                    <div className={styles.participacao}>
+                      <div className={styles.participacaoBar}>
+                        <div className={styles.participacaoFill} style={{ width: `${Math.max(0, pct)}%`, background: c.cor }} />
+                      </div>
+                      <span className={styles.participacaoPct}>{pct}% do patrimônio</span>
+                    </div>
+
+                    <div className={styles.contaStats}>
+                      <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Entradas</span>
+                        <span className={styles.statVal} style={{ color: 'var(--g400)' }}>{fmt(stats.entrada)}</span>
+                      </div>
+                      <div className={styles.statDivider} />
+                      <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Saídas</span>
+                        <span className={styles.statVal} style={{ color: 'var(--r400)' }}>{fmt(stats.saida)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )
           })}
@@ -220,10 +316,48 @@ export function Contas() {
               {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </FormGroup>
-          <FormGroup label="Saldo inicial (R$)">
-            <input type="number" step="0.01" value={contaForm.saldo} onChange={e => setC('saldo', e.target.value)} />
+          <FormGroup label={isCartao ? 'Fatura atual (R$)' : 'Saldo inicial (R$)'}>
+            <input
+              type="number" step="0.01"
+              placeholder="0"
+              value={contaForm.saldo}
+              onChange={e => setC('saldo', e.target.value)}
+            />
           </FormGroup>
         </FormRow>
+
+        {/* Campos exclusivos do cartão */}
+        {isCartao && (
+          <>
+            <FormGroup label="Limite de crédito (R$)">
+              <input
+                type="number" step="0.01"
+                placeholder="ex: 5000"
+                value={contaForm.limite}
+                onChange={e => setC('limite', e.target.value)}
+              />
+            </FormGroup>
+            <FormRow>
+              <FormGroup label="Dia de vencimento">
+                <input
+                  type="number" min="1" max="31"
+                  placeholder="ex: 10"
+                  value={contaForm.vencimento}
+                  onChange={e => setC('vencimento', e.target.value)}
+                />
+              </FormGroup>
+              <FormGroup label="Dia de fechamento">
+                <input
+                  type="number" min="1" max="31"
+                  placeholder="ex: 3"
+                  value={contaForm.fechamento}
+                  onChange={e => setC('fechamento', e.target.value)}
+                />
+              </FormGroup>
+            </FormRow>
+          </>
+        )}
+
         <FormGroup label="Cor da conta">
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
             {ACCOUNT_COLORS.map(cor => (
