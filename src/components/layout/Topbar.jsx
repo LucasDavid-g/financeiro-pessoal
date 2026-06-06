@@ -1,4 +1,3 @@
-import { MONTHS_FULL } from '../../data/defaults.js'
 import styles from './Topbar.module.css'
 
 const TAB_LABELS = {
@@ -10,15 +9,7 @@ const TAB_LABELS = {
   metas:       'Metas',
 }
 
-export function Topbar({ selYear, selMonth, onChangeMonth, onToggleTheme, theme, user, onLogout, activeTab }) {
-  const now = new Date()
-  const monthOptions = []
-  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
-    for (let m = 0; m < 12; m++) {
-      monthOptions.push({ value: `${y}-${m}`, label: `${MONTHS_FULL[m]} ${y}` })
-    }
-  }
-
+export function Topbar({ onToggleTheme, theme, user, onLogout, activeTab }) {
   const initials = user?.name
     ? user.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
     : '?'
@@ -41,17 +32,6 @@ export function Topbar({ selYear, selMonth, onChangeMonth, onToggleTheme, theme,
       </div>
 
       <div className={styles.actions}>
-        <select
-          className={styles.monthSelect}
-          value={`${selYear}-${selMonth}`}
-          onChange={e => {
-            const [y, m] = e.target.value.split('-').map(Number)
-            onChangeMonth(y, m)
-          }}
-        >
-          {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-
         <button className={styles.iconBtn} onClick={onToggleTheme} title="Alternar tema">
           <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
         </button>

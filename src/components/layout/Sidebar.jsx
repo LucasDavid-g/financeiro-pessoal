@@ -1,24 +1,15 @@
-import { MONTHS_FULL } from '../../data/defaults.js'
 import styles from './Sidebar.module.css'
 
 const TABS = [
   { id: 'dashboard',   icon: 'ti-layout-dashboard', label: 'Dashboard'  },
   { id: 'contas',      icon: 'ti-building-bank',     label: 'Contas'     },
-  { id: 'lancamentos', icon: 'ti-plus-circle',        label: 'Lançar'     },
+  { id: 'lancamentos', icon: 'ti-circle-plus',        label: 'Lançar'     },
   { id: 'extrato',     icon: 'ti-list-search',        label: 'Extrato'    },
   { id: 'fixos',       icon: 'ti-repeat',             label: 'Fixos'      },
   { id: 'metas',       icon: 'ti-target',             label: 'Metas'      },
 ]
 
-export function Sidebar({ active, onChange, user, onLogout, theme, onToggleTheme, selYear, selMonth, onChangeMonth }) {
-  const now = new Date()
-  const monthOptions = []
-  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
-    for (let m = 0; m < 12; m++) {
-      monthOptions.push({ value: `${y}-${m}`, label: `${MONTHS_FULL[m]} ${y}` })
-    }
-  }
-
+export function Sidebar({ active, onChange, user, onLogout, theme, onToggleTheme }) {
   const initials = user?.name
     ? user.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
     : '?'
@@ -55,23 +46,8 @@ export function Sidebar({ active, onChange, user, onLogout, theme, onToggleTheme
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer — apenas theme + user */}
       <div className={styles.footer}>
-        {/* Month selector */}
-        <div className={`${styles.monthWrap} sidebar-month`}>
-          <div className={styles.monthLabel}>Período</div>
-          <select
-            className={styles.monthSelect}
-            value={`${selYear}-${selMonth}`}
-            onChange={e => {
-              const [y, m] = e.target.value.split('-').map(Number)
-              onChangeMonth(y, m)
-            }}
-          >
-            {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-
         <div className={styles.footerActions}>
           <button className={styles.themeBtn} onClick={onToggleTheme} title="Alternar tema">
             <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />

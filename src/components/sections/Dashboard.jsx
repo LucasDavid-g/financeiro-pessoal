@@ -6,33 +6,27 @@ import {
 } from 'chart.js'
 import { useApp } from '../../context/AppContext.jsx'
 import {
-  getMesData, getLancsDoMes, getFixosTotal, getParcelasTotal,
-  getInvestidoTotal, getSaldoDisponivel, getTotalPendente,
-  getSaldoReal, getCompromissosPendentes, getContaSaldo,
+  getLancsDoPeriodo, getMetricasPeriodo, getMesesNoPeriodo,
+  getFixosTotal, getParcelasTotal, getInvestidoTotal,
+  getSaldoDisponivel, getTotalPendente, getSaldoReal,
+  getCompromissosPendentes, getContaSaldo,
 } from '../../utils/calculators.js'
-import { fmt, getPastMonths, monthLabel } from '../../utils/formatters.js'
-import { CAT_CONFIG } from '../../data/defaults.js'
+import { fmt } from '../../utils/formatters.js'
+import { CAT_CONFIG, MONTHS_SHORT } from '../../data/defaults.js'
 import { contaLabel } from '../../utils/contaFilters.js'
-import { Badge } from '../ui/Badge.jsx'
-import { Button } from '../ui/Button.jsx'
-import { EmptyState } from '../ui/EmptyState.jsx'
+import { Badge }       from '../ui/Badge.jsx'
+import { Button }      from '../ui/Button.jsx'
+import { EmptyState }  from '../ui/EmptyState.jsx'
+import { PeriodFilter } from '../ui/PeriodFilter.jsx'
+import { usePeriod }   from '../../hooks/usePeriod.js'
 import styles from './Dashboard.module.css'
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Filler, Tooltip)
 
-const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark'
-
 const tooltipStyle = {
-  backgroundColor: '#0C1220',
-  titleColor: '#E8EEFF',
-  bodyColor: '#6B80A4',
-  borderColor: '#1C2840',
-  borderWidth: 1,
-  padding: 10,
-  cornerRadius: 8,
-  displayColors: true,
-  boxWidth: 8,
-  boxHeight: 8,
+  backgroundColor: '#0C1220', titleColor: '#E8EEFF', bodyColor: '#6B80A4',
+  borderColor: '#1C2840', borderWidth: 1, padding: 10, cornerRadius: 8,
+  displayColors: true, boxWidth: 8, boxHeight: 8,
 }
 
 function StatChip({ icon, label, value, color, bg }) {
@@ -82,52 +76,63 @@ function SectionTitle({ title, sub }) {
   )
 }
 
-export function Dashboard({ selYear, selMonth }) {
+export function Dashboard() {
   const { state, dispatch } = useApp()
+  const { period, setPreset, setRange } = usePeriod()
+  const { inicio, fim } = period
 
-  const d        = getMesData(state, selYear, selMonth)
-  const dPrev    = getMesData(state, selMonth === 0 ? selYear - 1 : selYear, selMonth === 0 ? 11 : selMonth - 1)
+  // Métricas do período selecionado
+  const metricas    = getMetricasPeriodo(state, inicio, fim)
+  const { receitas, despesas, invest, pendente, saldo: saldoMes, lancs } = metricas
+
+  const economia     = receitas - despesas - invest
+  const taxaPoupanca = receitas > 0 ? Math.round((economia / receitas) * 100) : 0
+
+  // Métricas de conta (sempre atuais — não dependem do período)
   const saldoDisp    = getSaldoDisponivel(state)
   const totalPendente = getTotalPendente(state)
   const saldoReal    = getSaldoReal(state)
   const investido    = getInvestidoTotal(state)
-  const compromissos  = getCompromissosPendentes(state)
+  const compromissos = getCompromissosPendentes(state)
   const fixosTotal   = getFixosTotal(state.fixos)
   const parcelasTotal = getParcelasTotal(state.parcelas)
   const patrimonioTotal = state.contas.reduce((s, c) => s + getContaSaldo(state, c.id), 0)
 
-  const lancs   = getLancsDoMes(state.lancamentos, selYear, selMonth)
   const recentes = lancs.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8)
-  const hoje    = new Date().toISOString().slice(0, 10)
+  const hoje     = new Date().toISOString().slice(0, 10)
 
-  const economia     = d.receitas - d.totalSaidas
-  const tendReceita  = dPrev.receitas > 0 ? Math.round(((d.receitas - dPrev.receitas) / dPrev.receitas) * 100) : null
-  const tendDespesa  = dPrev.despesas > 0 ? Math.round(((d.despesas - dPrev.despesas) / dPrev.despesas) * 100) : null
-  const taxaPoupanca = d.receitas > 0 ? Math.round((economia / d.receitas) * 100) : 0
+  // ── Gráfico: Fluxo de caixa — meses do período ──────────────────
+  const mesesPeriodo = useMemo(() => getMesesNoPeriodo(inicio, fim), [inicio, fim])
 
-  // ── Gráfico: Fluxo de caixa (linha) ──────────────
-  const meses = getPastMonths(selYear, selMonth, 6)
   const lineData = useMemo(() => ({
-    labels: meses.map(m => monthLabel(m.year, m.month)),
+    labels: mesesPeriodo.map(m => `${MONTHS_SHORT[m.month]}/${String(m.year).slice(2)}`),
     datasets: [
       {
         label: 'Receitas',
-        data: meses.map(m => getMesData(state, m.year, m.month).receitas),
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16,185,129,0.08)',
+        data: mesesPeriodo.map(m => {
+          const isoM = `${m.year}-${String(m.month + 1).padStart(2,'0')}`
+          return state.lancamentos
+            .filter(l => l.mes === isoM && l.tipo === 'receita')
+            .reduce((s, l) => s + l.valor, 0)
+        }),
+        borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.08)',
         tension: .4, fill: true, pointRadius: 4, pointHoverRadius: 6,
         borderWidth: 2, pointBackgroundColor: '#10B981',
       },
       {
         label: 'Despesas',
-        data: meses.map(m => getMesData(state, m.year, m.month).totalSaidas),
-        borderColor: '#F43F5E',
-        backgroundColor: 'rgba(244,63,94,0.06)',
+        data: mesesPeriodo.map(m => {
+          const isoM = `${m.year}-${String(m.month + 1).padStart(2,'0')}`
+          return state.lancamentos
+            .filter(l => l.mes === isoM && l.tipo === 'despesa' && l.status !== 'pendente')
+            .reduce((s, l) => s + l.valor, 0)
+        }),
+        borderColor: '#F43F5E', backgroundColor: 'rgba(244,63,94,0.06)',
         tension: .4, fill: true, pointRadius: 4, pointHoverRadius: 6,
         borderWidth: 2, pointBackgroundColor: '#F43F5E',
       },
     ],
-  }), [state, selYear, selMonth])
+  }), [state.lancamentos, inicio, fim])
 
   const lineOpts = {
     responsive: true, maintainAspectRatio: false,
@@ -138,7 +143,7 @@ export function Dashboard({ selYear, selMonth }) {
     },
   }
 
-  // ── Gráfico: Gastos por categoria (barra) ─────────
+  // ── Gráfico: Gastos por categoria ────────────────────────────────
   const catData = useMemo(() => {
     const cats = {}
     lancs.filter(l => l.tipo === 'despesa' && l.status !== 'pendente').forEach(l => {
@@ -151,15 +156,13 @@ export function Dashboard({ selYear, selMonth }) {
       datasets: [{
         data: sorted.map(([, v]) => v),
         backgroundColor: ['#10B981','#3B82F6','#F59E0B','#F43F5E','#8B5CF6','#06B6D4'],
-        borderWidth: 0, borderRadius: 6,
-        barThickness: 20,
+        borderWidth: 0, borderRadius: 6, barThickness: 20,
       }],
     }
   }, [lancs])
 
   const barOpts = {
-    responsive: true, maintainAspectRatio: false,
-    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
     plugins: { legend: { display: false }, tooltip: { ...tooltipStyle } },
     scales: {
       x: { grid: { color: 'rgba(128,128,128,.05)' }, ticks: { color: '#6B80A4', font: { size: 10 }, callback: v => `R$${v}` } },
@@ -167,7 +170,7 @@ export function Dashboard({ selYear, selMonth }) {
     },
   }
 
-  // ── Gráfico: Distribuição patrimônio (donut) ──────
+  // ── Gráfico: Patrimônio por conta ────────────────────────────────
   const donutPatrimonio = useMemo(() => {
     const contas = state.contas.filter(c => getContaSaldo(state, c.id) > 0)
     return {
@@ -175,49 +178,45 @@ export function Dashboard({ selYear, selMonth }) {
       datasets: [{
         data: contas.map(c => getContaSaldo(state, c.id)),
         backgroundColor: contas.map(c => c.cor),
-        borderWidth: 2,
-        borderColor: 'transparent',
-        hoverOffset: 4,
+        borderWidth: 2, borderColor: 'transparent', hoverOffset: 4,
       }],
     }
   }, [state])
 
-  // ── Gráfico: Composição de gastos (donut) ─────────
+  // ── Gráfico: Composição de gastos ────────────────────────────────
   const donutGastos = useMemo(() => ({
     labels: ['Fixos', 'Parcelas', 'Variável'],
     datasets: [{
-      data: [fixosTotal, parcelasTotal, Math.max(0, d.despesas - fixosTotal - parcelasTotal)],
-      backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'],
-      borderWidth: 2,
-      borderColor: 'transparent',
-      hoverOffset: 4,
+      data: [fixosTotal, parcelasTotal, Math.max(0, despesas - fixosTotal - parcelasTotal)],
+      backgroundColor: ['#10B981','#3B82F6','#F59E0B'],
+      borderWidth: 2, borderColor: 'transparent', hoverOffset: 4,
     }],
-  }), [fixosTotal, parcelasTotal, d])
+  }), [fixosTotal, parcelasTotal, despesas])
 
   const donutOpts = {
     responsive: true, maintainAspectRatio: false, cutout: '70%',
     plugins: { legend: { display: false }, tooltip: { ...tooltipStyle } },
   }
 
-  const totalGastos = fixosTotal + parcelasTotal + Math.max(0, d.despesas - fixosTotal - parcelasTotal)
+  const totalGastos = fixosTotal + parcelasTotal + Math.max(0, despesas - fixosTotal - parcelasTotal)
 
   return (
     <div className={`dash-grid ${styles.dashboard}`}>
 
-      {/* ── Hero — Patrimônio ─────────────────────── */}
+      {/* ── Hero — Patrimônio ─────────────────── */}
       <div className={`col-7 ${styles.heroCard}`}>
         <div className={styles.heroGlow} />
         <div className={styles.heroGlow2} />
         <div className={styles.heroLabel}>Patrimônio total</div>
         <div className={styles.heroValue}>{fmt(patrimonioTotal)}</div>
         <div className={styles.heroStats}>
-          <StatChip icon="ti-wallet" label="Disponível" value={fmt(saldoDisp)} color="#10B981" bg="rgba(16,185,129,0.10)" />
-          <StatChip icon="ti-clock-pause" label="Comprometido" value={fmt(totalPendente)} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
-          <StatChip icon="ti-trending-up" label="Investido" value={fmt(investido)} color="#3B82F6" bg="rgba(59,130,246,0.10)" />
+          <StatChip icon="ti-wallet"      label="Disponível"    value={fmt(saldoDisp)}    color="#10B981" bg="rgba(16,185,129,0.10)" />
+          <StatChip icon="ti-clock-pause" label="Comprometido"  value={fmt(totalPendente)} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
+          <StatChip icon="ti-trending-up" label="Investido"     value={fmt(investido)}    color="#3B82F6" bg="rgba(59,130,246,0.10)" />
         </div>
       </div>
 
-      {/* ── Saldo disponível real ────────────────── */}
+      {/* ── Saldo disponível ──────────────────── */}
       <div className={`col-5 ${styles.saldoCard}`}>
         <div className={styles.saldoLabel}>Saldo disponível</div>
         <div className={styles.saldoValue} style={{ color: saldoReal >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
@@ -240,24 +239,29 @@ export function Dashboard({ selYear, selMonth }) {
         </div>
       </div>
 
-      {/* ── KPIs do mês ─────────────────────────── */}
+      {/* ── Filtro de período ─────────────────── */}
+      <div className={`col-12 ${styles.periodRow}`}>
+        <div className={styles.periodLeft}>
+          <i className="ti ti-chart-line" style={{ color: 'var(--color-text3)', fontSize: 14 }} />
+          <span className={styles.periodInfo}>Indicadores do período</span>
+        </div>
+        <PeriodFilter period={period} onPreset={setPreset} onRange={setRange} />
+      </div>
+
+      {/* ── KPIs do período ───────────────────── */}
       <div className={`col-12 ${styles.kpiRow}`}>
         <KpiCard
-          label="Receitas do mês"
-          value={fmt(d.receitas)}
+          label="Receitas"
+          value={fmt(receitas)}
           icon="ti-arrow-down-left"
           gradient="linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05))"
-          delta={tendReceita}
-          deltaLabel="vs mês ant."
-          sub={`${taxaPoupanca}% economizado`}
+          sub={`${taxaPoupanca}% de poupança`}
         />
         <KpiCard
-          label="Despesas do mês"
-          value={fmt(d.despesas)}
+          label="Despesas"
+          value={fmt(despesas)}
           icon="ti-arrow-up-right"
           gradient="linear-gradient(135deg,rgba(244,63,94,.15),rgba(244,63,94,.05))"
-          delta={tendDespesa}
-          deltaLabel="vs mês ant."
           sub="apenas pagas"
         />
         <KpiCard
@@ -267,10 +271,10 @@ export function Dashboard({ selYear, selMonth }) {
           gradient={economia >= 0
             ? 'linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05))'
             : 'linear-gradient(135deg,rgba(244,63,94,.15),rgba(244,63,94,.05))'}
-          sub={economia >= 0 ? 'guardado este mês' : 'no vermelho'}
+          sub={economia >= 0 ? 'guardado no período' : 'no vermelho'}
         />
         <KpiCard
-          label="Comprometido"
+          label="Comprometido mensal"
           value={fmt(fixosTotal + parcelasTotal)}
           icon="ti-repeat"
           gradient="linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05))"
@@ -278,9 +282,9 @@ export function Dashboard({ selYear, selMonth }) {
         />
       </div>
 
-      {/* ── Fluxo de caixa ─────────────────────── */}
+      {/* ── Fluxo de caixa ────────────────────── */}
       <div className={`col-8 ${styles.chartCard}`}>
-        <SectionTitle title="Fluxo de caixa" sub="Últimos 6 meses" />
+        <SectionTitle title="Fluxo de caixa" sub={`${mesesPeriodo.length} ${mesesPeriodo.length === 1 ? 'mês' : 'meses'}`} />
         <div className={styles.chartLegend}>
           {[['#10B981','Receitas'],['#F43F5E','Despesas']].map(([c,l]) => (
             <div key={l} className={styles.legendItem}>
@@ -294,14 +298,14 @@ export function Dashboard({ selYear, selMonth }) {
         </div>
       </div>
 
-      {/* ── Gastos por categoria ─────────────── */}
+      {/* ── Gastos por categoria ──────────────── */}
       <div className={`col-4 ${styles.chartCard}`}>
-        <SectionTitle title="Gastos por categoria" sub="Mês atual" />
+        <SectionTitle title="Gastos por categoria" sub="Período" />
         {catData.datasets[0].data.length > 0
           ? <div className={styles.chartWrap} style={{ height: 200 }}>
               <Bar data={catData} options={barOpts} />
             </div>
-          : <EmptyState message="Sem despesas registradas" icon="ti-chart-bar" compact />
+          : <EmptyState message="Sem despesas no período" icon="ti-chart-bar" compact />
         }
       </div>
 
@@ -315,14 +319,14 @@ export function Dashboard({ selYear, selMonth }) {
             </div>
             <div className={styles.donutLegend}>
               {state.contas.map(c => {
-                const saldo = getContaSaldo(state, c.id)
-                const pct = patrimonioTotal > 0 ? Math.round((saldo / patrimonioTotal) * 100) : 0
+                const s = getContaSaldo(state, c.id)
+                const pct = patrimonioTotal > 0 ? Math.round((s / patrimonioTotal) * 100) : 0
                 return (
                   <div key={c.id} className={styles.donutItem}>
                     <div className={styles.donutDot} style={{ background: c.cor }} />
                     <span className={styles.donutName}>{c.nome}</span>
                     <span className={styles.donutPct}>{pct}%</span>
-                    <span className={styles.donutVal}>{fmt(saldo)}</span>
+                    <span className={styles.donutVal}>{fmt(s)}</span>
                   </div>
                 )
               })}
@@ -331,16 +335,16 @@ export function Dashboard({ selYear, selMonth }) {
         ) : <EmptyState message="Nenhuma conta" icon="ti-building-bank" compact />}
       </div>
 
-      {/* ── Composição de gastos ─────────────── */}
+      {/* ── Composição de gastos ──────────────── */}
       <div className={`col-4 ${styles.chartCard}`}>
-        <SectionTitle title="Composição de gastos" />
+        <SectionTitle title="Composição de gastos" sub="Mensal" />
         {totalGastos > 0 ? (
           <div className={styles.donutWrap}>
             <div style={{ width: 100, height: 100, flexShrink: 0 }}>
               <Doughnut data={donutGastos} options={donutOpts} />
             </div>
             <div className={styles.donutLegend}>
-              {[['#10B981','Fixos',fixosTotal],['#3B82F6','Parcelas',parcelasTotal],['#F59E0B','Variável',Math.max(0,d.despesas-fixosTotal-parcelasTotal)]]
+              {[['#10B981','Fixos',fixosTotal],['#3B82F6','Parcelas',parcelasTotal],['#F59E0B','Variável',Math.max(0,despesas-fixosTotal-parcelasTotal)]]
                 .map(([color,label,val]) => (
                   <div key={label} className={styles.donutItem}>
                     <div className={styles.donutDot} style={{ background: color }} />
@@ -348,18 +352,15 @@ export function Dashboard({ selYear, selMonth }) {
                     <span className={styles.donutPct}>{totalGastos > 0 ? Math.round(val/totalGastos*100) : 0}%</span>
                     <span className={styles.donutVal}>{fmt(val)}</span>
                   </div>
-                ))
-              }
+                ))}
             </div>
           </div>
-        ) : <EmptyState message="Sem gastos no mês" icon="ti-chart-pie" compact />}
+        ) : <EmptyState message="Sem gastos no período" icon="ti-chart-pie" compact />}
       </div>
 
       {/* ── Próximos compromissos ─────────────── */}
       <div className={`col-4 ${styles.listCard}`}>
-        <div className={styles.listHeader}>
-          <SectionTitle title="Próximos compromissos" sub={compromissos.length > 0 ? `${fmt(totalPendente)} total` : ''} />
-        </div>
+        <SectionTitle title="Próximos compromissos" sub={compromissos.length > 0 ? `${fmt(totalPendente)} total` : ''} />
         {compromissos.length > 0 ? (
           <div className={styles.listBody}>
             {compromissos.slice(0, 5).map(l => {
@@ -380,12 +381,8 @@ export function Dashboard({ selYear, selMonth }) {
                     </span>
                   </div>
                   <div className={styles.listItemRight}>
-                    <span className={styles.listItemVal} style={{ color: 'var(--r400)' }}>
-                      {fmt(l.valor)}
-                    </span>
-                    <Button small variant="success" onClick={() => dispatch({ type: 'PAGAR_COMPROMISSO', id: l.id })}>
-                      Pagar
-                    </Button>
+                    <span className={styles.listItemVal} style={{ color: 'var(--r400)' }}>{fmt(l.valor)}</span>
+                    <Button small variant="success" onClick={() => dispatch({ type: 'PAGAR_COMPROMISSO', id: l.id })}>Pagar</Button>
                   </div>
                 </div>
               )
@@ -398,7 +395,7 @@ export function Dashboard({ selYear, selMonth }) {
 
       {/* ── Lançamentos recentes ──────────────── */}
       <div className={`col-12 ${styles.listCard}`}>
-        <SectionTitle title="Lançamentos recentes" sub="Mês atual" />
+        <SectionTitle title="Lançamentos recentes" sub="Período selecionado" />
         {recentes.length > 0 ? (
           <div className={styles.listGrid}>
             {recentes.map(l => {
@@ -426,7 +423,7 @@ export function Dashboard({ selYear, selMonth }) {
             })}
           </div>
         ) : (
-          <EmptyState message="Nenhum lançamento neste mês" icon="ti-receipt" compact />
+          <EmptyState message="Nenhum lançamento no período" icon="ti-receipt" compact />
         )}
       </div>
 

@@ -10,15 +10,13 @@ import { Extrato }     from './components/sections/Extrato.jsx'
 import { Fixos }       from './components/sections/Fixos.jsx'
 import { Metas }       from './components/sections/Metas.jsx'
 import { Login }       from './components/sections/Login.jsx'
-import { useMonthNav } from './hooks/useMonthNav.js'
 import { useTheme }    from './hooks/useTheme.js'
 import { useAuth }     from './hooks/useAuth.js'
 import './styles/globals.css'
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard')
-  const { selYear, selMonth, setMonth } = useMonthNav()
-  const { theme, toggle } = useTheme()
+  const { theme, toggle }         = useTheme()
   const { status, user, login, logout } = useAuth()
 
   if (status === 'loading') {
@@ -47,13 +45,11 @@ function AppContent() {
 
   if (status === 'unauthed') return <Login onLogin={login} />
 
-  const sharedProps = { selYear, selMonth }
-
   const sections = {
-    dashboard:   <Dashboard   {...sharedProps} />,
-    contas:      <Contas      {...sharedProps} />,
+    dashboard:   <Dashboard />,
+    contas:      <Contas />,
     lancamentos: <Lancamentos />,
-    extrato:     <Extrato     {...sharedProps} />,
+    extrato:     <Extrato />,
     fixos:       <Fixos />,
     metas:       <Metas />,
   }
@@ -67,16 +63,10 @@ function AppContent() {
         onLogout={logout}
         theme={theme}
         onToggleTheme={toggle}
-        selYear={selYear}
-        selMonth={selMonth}
-        onChangeMonth={setMonth}
       />
 
       <div className="app-body">
         <Topbar
-          selYear={selYear}
-          selMonth={selMonth}
-          onChangeMonth={setMonth}
           onToggleTheme={toggle}
           theme={theme}
           user={user}

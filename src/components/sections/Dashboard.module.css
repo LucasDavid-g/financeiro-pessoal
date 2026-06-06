@@ -154,6 +154,30 @@
   font-family: var(--font-mono);
 }
 
+/* ── Period Row ─────────────────────────── */
+.periodRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--color-border);
+}
+
+.periodLeft {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.periodInfo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 /* ── KPI Row ──────────────────────────────── */
 .kpiRow {
   display: grid;

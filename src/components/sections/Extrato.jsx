@@ -3,11 +3,13 @@ import { useApp } from '../../context/AppContext.jsx'
 import { Button } from '../ui/Button.jsx'
 import { Badge } from '../ui/Badge.jsx'
 import { EmptyState } from '../ui/EmptyState.jsx'
+import { PeriodFilter } from '../ui/PeriodFilter.jsx'
 import { CAT_CONFIG } from '../../data/defaults.js'
-import { getMesData, getFixosTotal, getParcelasTotal } from '../../utils/calculators.js'
-import { fmt, getMonthKey } from '../../utils/formatters.js'
+import { getLancsDoPeriodo, getFixosTotal, getParcelasTotal } from '../../utils/calculators.js'
+import { fmt } from '../../utils/formatters.js'
 import { exportToCSV, exportToPDF } from '../../utils/csv.js'
 import { contaLabel } from '../../utils/contaFilters.js'
+import { usePeriod, periodLabel } from '../../hooks/usePeriod.js'
 import styles from './Extrato.module.css'
 
 const SORT_OPTS = [
@@ -16,10 +18,6 @@ const SORT_OPTS = [
   { value: 'valor-desc', label: 'Maior valor'   },
   { value: 'valor-asc',  label: 'Menor valor'   },
 ]
-
-const today    = new Date()
-const toISO    = d => d.toISOString().slice(0, 10)
-const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
 
 function KpiChip({ label, value, color, bg }) {
   return (
@@ -30,22 +28,19 @@ function KpiChip({ label, value, color, bg }) {
   )
 }
 
-export function Extrato({ selYear, selMonth }) {
+export function Extrato() {
   const { state, dispatch } = useApp()
+  const { period, setPreset, setRange } = usePeriod()
+  const { inicio, fim } = period
 
-  const [usarPeriodo,    setUsarPeriodo]    = useState(false)
-  const [inicio,         setInicio]         = useState(toISO(firstDay))
-  const [fim,            setFim]            = useState(toISO(today))
-  const [busca,          setBusca]          = useState('')
-  const [tipo,           setTipo]           = useState('')
-  const [contaId,        setContaId]        = useState('')
-  const [sort,           setSort]           = useState('data-desc')
-  const [showRelatorio,  setShowRelatorio]  = useState(false)
+  const [busca,         setBusca]         = useState('')
+  const [tipo,          setTipo]          = useState('')
+  const [contaId,       setContaId]       = useState('')
+  const [sort,          setSort]          = useState('data-desc')
+  const [showRelatorio, setShowRelatorio] = useState(false)
 
   const filtered = useMemo(() => {
-    let data = usarPeriodo
-      ? state.lancamentos.filter(l => l.data >= inicio && l.data <= fim)
-      : state.lancamentos.filter(l => l.mes === getMonthKey(selYear, selMonth))
+    let data = getLancsDoPeriodo(state.lancamentos, inicio, fim)
     if (tipo)    data = data.filter(l => l.tipo === tipo)
     if (contaId) data = data.filter(l => l.contaId === parseInt(contaId))
     if (busca)   data = data.filter(l => l.desc.toLowerCase().includes(busca.toLowerCase()))
@@ -54,7 +49,7 @@ export function Extrato({ selYear, selMonth }) {
     else if (sort === 'valor-asc')  data = [...data].sort((a, b) => a.valor - b.valor)
     else                            data = [...data].sort((a, b) => b.data.localeCompare(a.data))
     return data
-  }, [state.lancamentos, selYear, selMonth, usarPeriodo, inicio, fim, tipo, contaId, busca, sort])
+  }, [state.lancamentos, inicio, fim, tipo, contaId, busca, sort])
 
   const totalRec = filtered.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
   const totalDes = filtered.filter(l => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
@@ -63,7 +58,6 @@ export function Extrato({ selYear, selMonth }) {
   const saldoPer = totalRec - totalDes - totalInv
 
   // Relatório executivo
-  const d        = getMesData(state, selYear, selMonth)
   const fixos    = getFixosTotal(state.fixos)
   const parcelas = getParcelasTotal(state.parcelas)
 
@@ -104,9 +98,15 @@ export function Extrato({ selYear, selMonth }) {
           <p className={styles.pageSub}>{filtered.length} transações encontradas</p>
         </div>
         <div className={styles.exportBtns}>
-          <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, selYear, selMonth, {})}>CSV</Button>
-          <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, selYear, selMonth, {})}>PDF</Button>
+          <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, 0, 0, {})}>CSV</Button>
+          <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, 0, 0, {})}>PDF</Button>
         </div>
+      </div>
+
+      {/* Filtro de período */}
+      <div className={styles.periodWrap}>
+        <PeriodFilter period={period} onPreset={setPreset} onRange={setRange} />
+        <span className={styles.periodCount}>{filtered.length} lançamentos</span>
       </div>
 
       {/* KPI Strip */}
@@ -133,12 +133,12 @@ export function Extrato({ selYear, selMonth }) {
           <div className={styles.relBody}>
             <div className={styles.relGrid}>
               {[
-                { label: 'Receitas',  value: fmt(d.receitas),  color: 'var(--g400)' },
-                { label: 'Despesas',  value: fmt(d.despesas),  color: 'var(--r400)' },
-                { label: 'Fixos',     value: fmt(fixos),       color: 'var(--color-text)' },
-                { label: 'Parcelas',  value: fmt(parcelas),    color: 'var(--color-text)' },
-                { label: 'Investido', value: fmt(d.invest),    color: 'var(--a400)' },
-                { label: 'Saldo mês', value: fmt(d.saldo),     color: d.saldo >= 0 ? 'var(--g400)' : 'var(--r400)' },
+                { label: 'Receitas',  value: fmt(totalRec),             color: 'var(--g400)' },
+                { label: 'Despesas',  value: fmt(totalDes),             color: 'var(--r400)' },
+                { label: 'Fixos',     value: fmt(fixos),                color: 'var(--color-text)' },
+                { label: 'Parcelas',  value: fmt(parcelas),             color: 'var(--color-text)' },
+                { label: 'Investido', value: fmt(totalInv),             color: 'var(--a400)' },
+                { label: 'Saldo',     value: fmt(saldoPer),             color: saldoPer >= 0 ? 'var(--g400)' : 'var(--r400)' },
               ].map(item => (
                 <div key={item.label} className={styles.relItem}>
                   <span className={styles.relLabel}>{item.label}</span>
@@ -161,39 +161,8 @@ export function Extrato({ selYear, selMonth }) {
         )}
       </div>
 
-      {/* Filtros */}
+      {/* Filtros de busca */}
       <div className={styles.filterCard}>
-        {/* Toggle período */}
-        <div className={styles.periodToggle}>
-          <button
-            className={[styles.periodBtn, !usarPeriodo ? styles.periodBtnActive : ''].join(' ')}
-            onClick={() => setUsarPeriodo(false)}
-          >
-            <i className="ti ti-calendar-month" />
-            Mês selecionado
-          </button>
-          <button
-            className={[styles.periodBtn, usarPeriodo ? styles.periodBtnActive : ''].join(' ')}
-            onClick={() => setUsarPeriodo(true)}
-          >
-            <i className="ti ti-calendar-stats" />
-            Período personalizado
-          </button>
-        </div>
-
-        {usarPeriodo && (
-          <div className={styles.periodDates}>
-            <div className={styles.dateField}>
-              <label className={styles.dateLabel}>De</label>
-              <input type="date" value={inicio} onChange={e => setInicio(e.target.value)} />
-            </div>
-            <div className={styles.dateField}>
-              <label className={styles.dateLabel}>Até</label>
-              <input type="date" value={fim} onChange={e => setFim(e.target.value)} />
-            </div>
-          </div>
-        )}
-
         <div className={styles.filterRow}>
           <div className={styles.searchWrap}>
             <i className="ti ti-search" />
@@ -216,7 +185,6 @@ export function Extrato({ selYear, selMonth }) {
           </select>
         </div>
 
-        {/* Sort chips */}
         <div className={styles.sortRow}>
           {SORT_OPTS.map(o => (
             <button
@@ -261,8 +229,7 @@ export function Extrato({ selYear, selMonth }) {
                       {isPend && <Badge variant="a" style={{ marginLeft: 6 }}>pendente</Badge>}
                     </span>
                     <span className={styles.lancSub}>
-                      {l.cat || l.tipo}
-                      {conta ? ' · ' + contaLabel(conta) : ''}
+                      {l.cat || l.tipo}{conta ? ' · ' + contaLabel(conta) : ''}
                     </span>
                   </div>
                   <div className={styles.lancRight}>
@@ -286,7 +253,7 @@ export function Extrato({ selYear, selMonth }) {
           </div>
         )
       }) : (
-        <EmptyState message="Nenhum lançamento encontrado" icon="ti-receipt" />
+        <EmptyState message="Nenhum lançamento no período selecionado" icon="ti-receipt" />
       )}
     </div>
   )

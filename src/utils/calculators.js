@@ -3,6 +3,34 @@ import { getMonthKey } from './formatters.js'
 export const getLancsDoMes = (lancamentos, year, month) =>
   lancamentos.filter((l) => l.mes === getMonthKey(year, month))
 
+// ── Filtro por período (date range) ─────────────────────────────
+export const getLancsDoPeriodo = (lancamentos, inicio, fim) =>
+  lancamentos.filter((l) => l.data >= inicio && l.data <= fim)
+
+export const getMetricasPeriodo = (state, inicio, fim) => {
+  const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
+  const receitas = lancs.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
+  const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
+  const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
+  const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
+  return { receitas, despesas, invest, pendente, saldo: receitas - despesas - invest, lancs }
+}
+
+// Meses contidos num intervalo de datas
+export const getMesesNoPeriodo = (inicio, fim) => {
+  const meses = []
+  const [iy, im] = inicio.split('-').map(Number)
+  const [fy, fm] = fim.split('-').map(Number)
+  let y = iy, m = im - 1
+  const endY = fy, endM = fm - 1
+  while (y < endY || (y === endY && m <= endM)) {
+    meses.push({ year: y, month: m })
+    m++
+    if (m > 11) { m = 0; y++ }
+  }
+  return meses
+}
+
 export const getFixosTotal = (fixos) =>
   fixos.filter((f) => f.ativo).reduce((sum, f) => sum + f.valor, 0)
 
