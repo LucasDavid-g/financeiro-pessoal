@@ -58,6 +58,13 @@
   transform-origin: top left;
 }
 
+/* Alinhado à direita do pill */
+.dropdownRight {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+
 /* No mobile: centraliza e aumenta */
 @media (max-width: 768px) {
   .dropdown {

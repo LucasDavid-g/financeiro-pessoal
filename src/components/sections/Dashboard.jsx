@@ -245,7 +245,7 @@ export function Dashboard() {
           <i className="ti ti-chart-line" style={{ color: 'var(--color-text3)', fontSize: 14 }} />
           <span className={styles.periodInfo}>Indicadores do período</span>
         </div>
-        <PeriodFilter period={period} onPreset={setPreset} onRange={setRange} />
+        <PeriodFilter period={period} onPreset={setPreset} onRange={setRange} align="right" />
       </div>
 
       {/* ── KPIs do período ───────────────────── */}

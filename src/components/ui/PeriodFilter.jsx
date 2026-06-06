@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { PRESETS, getPresetRange, periodLabel } from '../../hooks/usePeriod.js'
 import styles from './PeriodFilter.module.css'
 
-export function PeriodFilter({ period, onPreset, onRange }) {
+export function PeriodFilter({ period, onPreset, onRange, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -38,7 +38,7 @@ export function PeriodFilter({ period, onPreset, onRange }) {
 
       {/* Dropdown */}
       {open && (
-        <div className={styles.dropdown}>
+        <div className={[styles.dropdown, align === 'right' ? styles.dropdownRight : ''].join(' ')}>
           {/* Presets */}
           <div className={styles.presets}>
             {PRESETS.map(p => (

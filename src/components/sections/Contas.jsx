@@ -4,10 +4,12 @@ import { Modal } from '../ui/Modal.jsx'
 import { FormGroup, FormRow } from '../ui/FormGroup.jsx'
 import { Button } from '../ui/Button.jsx'
 import { EmptyState } from '../ui/EmptyState.jsx'
+import { PeriodFilter } from '../ui/PeriodFilter.jsx'
 import { ACCOUNT_COLORS, TIPO_LABEL } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
 import { getContaSaldo, getContaMesStats } from '../../utils/calculators.js'
-import { fmt, getMonthKey } from '../../utils/formatters.js'
+import { fmt } from '../../utils/formatters.js'
+import { usePeriod } from '../../hooks/usePeriod.js'
 import styles from './Contas.module.css'
 
 const TIPO_ICONS = {
@@ -21,14 +23,20 @@ const TIPO_ICONS = {
 const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0] }
 const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: new Date().toISOString().slice(0, 10) }
 
-export function Contas({ selYear, selMonth }) {
+export function Contas() {
   const { state, dispatch } = useApp()
+  const { period: trPeriod, setPreset: setTrPreset, setRange: setTrRange } = usePeriod()
   const [contaModal, setContaModal] = useState(false)
   const [trModal,    setTrModal]    = useState(false)
   const [contaForm,  setContaForm]  = useState({ ...EMPTY_CONTA, editId: null })
   const [trForm,     setTrForm]     = useState({ ...EMPTY_TR })
   const setC = (k, v) => setContaForm(f => ({ ...f, [k]: v }))
   const setT = (k, v) => setTrForm(f => ({ ...f, [k]: v }))
+
+  // Mês atual para stats das contas
+  const now = new Date()
+  const selYear  = now.getFullYear()
+  const selMonth = now.getMonth() + 1
 
   const patrimonio = state.contas.reduce((s, c) => s + getContaSaldo(state, c.id), 0)
 
@@ -68,7 +76,7 @@ export function Contas({ selYear, selMonth }) {
     if (window.confirm(linhas.join('\n'))) dispatch({ type: 'DEL_CONTA', id: c.id })
   }
 
-  const transfers     = state.transferencias.filter(t => t.mes === getMonthKey(selYear, selMonth))
+  const transfers      = state.transferencias.filter(t => t.data >= trPeriod.inicio && t.data <= trPeriod.fim)
   const opcoesTransfer = contaOptions(state.contas, 'transferencia')
 
   return (
@@ -171,7 +179,8 @@ export function Contas({ selYear, selMonth }) {
       {/* Transferências */}
       <div className={styles.transSection}>
         <div className={styles.transSectionHeader}>
-          <h3 className={styles.transSectionTitle}>Transferências do mês</h3>
+          <h3 className={styles.transSectionTitle}>Transferências</h3>
+          <PeriodFilter period={trPeriod} onPreset={setTrPreset} onRange={setTrRange} align="right" />
         </div>
         {transfers.length > 0 ? (
           <div className={styles.transList}>
@@ -198,7 +207,7 @@ export function Contas({ selYear, selMonth }) {
             })}
           </div>
         ) : (
-          <EmptyState message="Nenhuma transferência neste mês" icon="ti-arrow-left-right" compact />
+          <EmptyState message="Nenhuma transferência no período selecionado" icon="ti-arrow-left-right" compact />
         )}
       </div>
 
