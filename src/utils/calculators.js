@@ -74,3 +74,42 @@ export const getBurnRate = (state) => {
   const mediaGastos = meses3.reduce((s, { year, month }) => s + getMesData(state, year, month).totalSaidas, 0) / 3
   return mediaGastos / 30
 }
+
+export const getInvestidoTotal = (state) => {
+  const tiposInvest = ['investimento', 'poupanca']
+  return state.contas
+    .filter(c => tiposInvest.includes(c.tipo))
+    .reduce((total, conta) => {
+      // Saldo base da conta
+      let saldo = parseFloat(conta.saldo) || 0
+      // Soma aportes (lançamentos de investimento vinculados a esta conta)
+      state.lancamentos
+        .filter(l => l.contaId === conta.id && l.tipo === 'investimento')
+        .forEach(l => { saldo += l.valor })
+      return total + saldo
+    }, 0)
+}
+
+// Saldo disponível = soma do saldo atual de contas correntes e digitais
+export const getSaldoDisponivel = (state) => {
+  const tiposOperacionais = ['corrente', 'digital']
+  return state.contas
+    .filter(c => tiposOperacionais.includes(c.tipo))
+    .reduce((total, conta) => total + getContaSaldo(state, conta.id), 0)
+}
+
+// Compromissos pendentes — despesas com status 'pendente'
+export const getCompromissosPendentes = (state) => {
+  return state.lancamentos
+    .filter(l => l.tipo === 'despesa' && l.status === 'pendente')
+    .sort((a, b) => a.data.localeCompare(b.data))
+}
+
+export const getTotalPendente = (state) => {
+  return getCompromissosPendentes(state).reduce((s, l) => s + l.valor, 0)
+}
+
+// Saldo disponível real = saldo contas operacionais - compromissos pendentes
+export const getSaldoReal = (state) => {
+  return getSaldoDisponivel(state) - getTotalPendente(state)
+}

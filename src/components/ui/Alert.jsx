@@ -1,18 +1,12 @@
 import styles from './Alert.module.css'
 
-const VARIANTS = {
-  ok:     { cls: styles.ok,     icon: 'ti-circle-check'   },
-  warn:   { cls: styles.warn,   icon: 'ti-alert-triangle' },
-  danger: { cls: styles.danger, icon: 'ti-alert-circle'   },
-  info:   { cls: styles.info,   icon: 'ti-info-circle'    },
-}
+const ICONS = { danger: 'ti-alert-triangle', warn: 'ti-alert-circle', ok: 'ti-check', info: 'ti-info-circle' }
 
-export function Alert({ variant = 'info', children }) {
-  const { cls, icon } = VARIANTS[variant]
+export function Alert({ children, variant = 'info' }) {
   return (
-    <div className={[styles.alert, cls].join(' ')}>
-      <i className={`ti ${icon}`} />
-      {children}
+    <div className={[styles.alert, styles[variant]].join(' ')}>
+      <i className={`ti ${ICONS[variant] || ICONS.info}`} />
+      <span>{children}</span>
     </div>
   )
 }

@@ -1,11 +1,16 @@
 import styles from './Button.module.css'
 
-export function Button({ children, variant = 'ghost', onClick, type = 'button', fullWidth, icon }) {
+export function Button({ children, onClick, variant = 'primary', icon, fullWidth, small, disabled }) {
   return (
     <button
-      type={type}
+      className={[
+        styles.btn,
+        styles[variant],
+        fullWidth ? styles.full : '',
+        small ? styles.small : '',
+      ].join(' ')}
       onClick={onClick}
-      className={[styles.btn, styles[variant], fullWidth ? styles.full : ''].join(' ')}
+      disabled={disabled}
     >
       {icon && <i className={`ti ${icon}`} />}
       {children}

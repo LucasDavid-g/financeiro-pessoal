@@ -1,31 +1,75 @@
 .nav {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  background: var(--color-surface2);
-  border-radius: var(--radius-lg);
-  padding: 3px;
-  margin: 1rem 1.25rem;
+  grid-template-columns: repeat(6, 1fr);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 4px;
+  position: sticky;
+  top: 57px;
+  z-index: 99;
 }
+
 .btn {
-  padding: 7px 2px;
+  padding: 10px 4px 8px;
   border: none;
   background: transparent;
-  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 10px;
-  font-family: var(--font-sans);
-  color: var(--color-text3);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
+  transition: var(--transition);
+  position: relative;
+}
+
+.iconWrap {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  color: var(--color-text3);
   transition: var(--transition);
 }
-.btn i { font-size: 16px; }
-.active {
-  background: var(--color-surface);
-  color: var(--color-text);
+
+.iconActive {
+  background: var(--g50);
+  color: var(--g500);
+}
+
+[data-theme="dark"] .iconActive {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--g400);
+}
+
+.label {
+  font-size: 9.5px;
   font-weight: 500;
-  box-shadow: var(--shadow-sm);
+  color: var(--color-text3);
+  letter-spacing: 0.01em;
+  transition: var(--transition);
+}
+
+.active .label { color: var(--g500); font-weight: 600; }
+[data-theme="dark"] .active .label { color: var(--g400); }
+
+/* Botão central — Lançar — destacado */
+.center {
+  position: relative;
+}
+
+.centerIcon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--g400), var(--g500));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-size: 20px;
+  box-shadow: 0 4px 12px var(--g-glow);
+  transition: var(--transition);
+  margin-top: -10px;
+}
+
+.center:hover .centerIcon {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px var(--g-glow);
 }

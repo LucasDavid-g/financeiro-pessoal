@@ -1,20 +1,58 @@
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-family: var(--font-sans);
   font-size: 13px;
-  border-radius: 20px;
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: var(--transition);
+  font-weight: 600;
+  border-radius: var(--radius-md);
   border: none;
+  cursor: pointer;
+  padding: 9px 16px;
+  transition: var(--transition);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
-.full { width: 100%; justify-content: center; border-radius: var(--radius-md); padding: 11px 20px; font-size: 14px; font-weight: 500; }
-.ghost { background: transparent; border: 0.5px solid var(--color-border2); color: var(--color-text2); }
-.ghost:hover { background: var(--color-surface2); }
-.primary { background: var(--g400); color: white; }
-.primary:hover { opacity: .88; }
-.danger { background: var(--r50); color: var(--r800); border: 0.5px solid var(--r400); }
-.icon-btn { background: transparent; border: none; padding: 5px; border-radius: 6px; color: var(--color-text3); font-size: 14px; }
-.icon-btn:hover { background: var(--color-surface2); color: var(--color-text); }
+.btn i { font-size: 14px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.primary {
+  background: linear-gradient(135deg, var(--g400), var(--g500));
+  color: white;
+  box-shadow: 0 2px 8px var(--g-glow);
+}
+.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--g-glow);
+}
+.primary:active { transform: translateY(0); }
+
+.ghost {
+  background: transparent;
+  color: var(--color-text2);
+  border: 1px solid var(--color-border);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--color-surface2);
+  border-color: var(--color-border2);
+  color: var(--color-text);
+}
+
+.danger {
+  background: var(--r50);
+  color: var(--r400);
+  border: 1px solid var(--r100);
+}
+.danger:hover:not(:disabled) { background: var(--r100); }
+
+.success {
+  background: var(--g50);
+  color: var(--g500);
+  border: 1px solid var(--g100);
+}
+.success:hover:not(:disabled) { background: var(--g100); }
+
+.full { width: 100%; justify-content: center; }
+
+.small { padding: 6px 12px; font-size: 12px; border-radius: var(--radius-sm); }
+.small i { font-size: 12px; }

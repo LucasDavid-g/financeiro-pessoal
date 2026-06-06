@@ -1,2 +1,8 @@
-.track { height: 4px; background: var(--color-surface2); border-radius: 2px; overflow: hidden; margin-top: 6px; }
-.fill  { height: 100%; border-radius: 2px; transition: width .4s ease; }
+.track {
+  height: 4px;
+  background: var(--color-surface2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.fill { height: 100%; border-radius: 4px; transition: width .4s ease; }

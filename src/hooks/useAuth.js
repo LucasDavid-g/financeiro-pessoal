@@ -1,36 +1,32 @@
 import { useState, useEffect } from 'react'
-import { isLoggedIn, logout as authLogout, getUser, login as authLogin } from '../services/auth.js'
-import { setupSheets } from '../services/sheets.js'
+import { loginWithGoogle, logoutFirebase, onAuthChange, getCurrentUser } from '../services/firebase.js'
 
 export function useAuth() {
   const [status, setStatus] = useState('loading')
   const [user,   setUser]   = useState(null)
 
   useEffect(() => {
-    const init = async () => {
-      if (isLoggedIn()) {
-        setUser(getUser())
-        try { await setupSheets() } catch {}
+    const unsubscribe = onAuthChange(async (authUser) => {
+      if (authUser) {
+        setUser({
+          uid:   authUser.uid,
+          email: authUser.email,
+          name:  authUser.displayName,
+          photo: authUser.photoURL,
+        })
         setStatus('authed')
-        return
+      } else {
+        setUser(null)
+        setStatus('unauthed')
       }
-      setStatus('unauthed')
-    }
-    init()
+    })
+    return unsubscribe
   }, [])
 
   const login = async () => {
     try {
       setStatus('loading')
-      const token = await authLogin()
-      // Busca info do usuário
-      const res  = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const info = await res.json()
-      localStorage.setItem('mdb_user', JSON.stringify(info))
-      setUser(info)
-      await setupSheets()
+      await loginWithGoogle()
       setStatus('authed')
     } catch (e) {
       console.error('Login error:', e)
@@ -38,10 +34,14 @@ export function useAuth() {
     }
   }
 
-  const logout = () => {
-    authLogout()
-    setUser(null)
-    setStatus('unauthed')
+  const logout = async () => {
+    try {
+      await logoutFirebase()
+      setUser(null)
+      setStatus('unauthed')
+    } catch (e) {
+      console.error('Logout error:', e)
+    }
   }
 
   return { status, user, login, logout }
