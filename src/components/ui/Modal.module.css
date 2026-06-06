@@ -5,9 +5,9 @@
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 1.5rem;
   animation: overlayIn .2s ease;
 }
 
@@ -15,20 +15,32 @@
 
 .modal {
   background: var(--color-surface);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-radius: var(--radius-xl);
   width: 100%;
   max-width: 480px;
   max-height: 92dvh;
   overflow-y: auto;
   border: 1px solid var(--color-border);
-  border-bottom: none;
   box-shadow: var(--shadow-xl);
   animation: modalIn .25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes modalIn {
-  from { transform: translateY(60px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(24px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-width: 100%;
+    border-bottom: none;
+  }
 }
 
 .header {
@@ -43,6 +55,7 @@
   z-index: 1;
 }
 
+/* Alça drag — só no mobile */
 .header::before {
   content: '';
   position: absolute;
@@ -51,13 +64,19 @@
   width: 36px; height: 4px;
   background: var(--color-border2);
   border-radius: 2px;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .header::before { display: block; }
+  .title  { margin-top: 14px; }
+  .close  { margin-top: 14px; }
 }
 
 .title {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.3px;
-  margin-top: 14px;
 }
 
 .close {
@@ -69,9 +88,8 @@
   color: var(--color-text2);
   font-size: 14px;
   display: flex; align-items: center; justify-content: center;
-  margin-top: 14px;
   transition: var(--transition);
 }
 .close:hover { background: var(--color-surface3); color: var(--color-text); }
 
-.body { padding: 1.125rem 1.25rem 2rem; display: flex; flex-direction: column; gap: 12px; }
+.body { padding: 1.125rem 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 12px; }
