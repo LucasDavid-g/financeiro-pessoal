@@ -77,6 +77,8 @@ function reducer(state, action) {
       return { ...state, parcelas: state.parcelas.filter(p => p.id !== action.id), _lastAction: action.type }
     case 'ADD_META':
       return { ...state, metas: [...state.metas, { ...action.payload, id: state.nextId }], nextId: state.nextId + 1, _lastAction: action.type }
+    case 'EDIT_META':
+      return { ...state, metas: state.metas.map(m => m.id === action.payload.id ? { ...m, ...action.payload } : m), _lastAction: action.type }
     case 'DEL_META':
       return { ...state, metas: state.metas.filter(m => m.id !== action.id), _lastAction: action.type }
     default:

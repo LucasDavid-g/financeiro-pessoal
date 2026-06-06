@@ -1,0 +1,262 @@
+.page {
+  animation: fadeIn 0.3s ease both;
+}
+
+/* Header */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.4px;
+  margin-bottom: 3px;
+}
+
+.pageSub {
+  font-size: 13px;
+  color: var(--color-text3);
+}
+
+/* Simulador */
+.simCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.simHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.simTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.simPreview {
+  background: var(--color-surface2);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  border: 1px solid var(--color-border);
+}
+
+.simPreviewLabel {
+  font-size: 10px;
+  color: var(--color-text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.simPreviewVal {
+  font-size: 28px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--g400);
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -0.04em;
+}
+
+.simPreviewEst {
+  font-size: 12px;
+  color: var(--color-text3);
+  margin-bottom: 12px;
+}
+
+.simPreviewSub {
+  font-size: 11px;
+  color: var(--color-text3);
+  margin-top: 6px;
+}
+
+/* Lista de metas */
+.metasList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metaCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.metaCard:hover {
+  border-color: var(--color-border2);
+  box-shadow: var(--shadow-md);
+}
+
+.metaTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.metaIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--g50);
+  color: var(--g400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .metaIcon {
+  background: rgba(16,185,129,0.12);
+}
+
+.metaInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.metaNome {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaSub {
+  font-size: 11px;
+  color: var(--color-text3);
+}
+
+.metaActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.editBtn,
+.delBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: var(--color-text3);
+}
+
+.editBtn:hover {
+  background: var(--color-surface2);
+  color: var(--color-text);
+}
+
+.delBtn:hover {
+  background: var(--r50);
+  color: var(--r400);
+}
+
+[data-theme="dark"] .delBtn:hover {
+  background: rgba(244,63,94,0.12);
+}
+
+/* Valores de progresso */
+.metaValores {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.metaAtual {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--g400);
+}
+
+.metaPct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text3);
+  font-family: var(--font-mono);
+}
+
+.metaTotal {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--color-text3);
+}
+
+/* Footer da meta */
+.metaFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.metaFalta {
+  font-size: 11px;
+  color: var(--color-text3);
+}
+
+.metaConcluida {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--g400);
+  background: var(--g50);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+[data-theme="dark"] .metaConcluida {
+  background: rgba(16,185,129,0.12);
+}
+
+/* Preview no modal */
+.modalPreview {
+  background: var(--color-surface2);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.modalPreviewSub {
+  font-size: 11px;
+  color: var(--color-text3);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
