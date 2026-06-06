@@ -24,6 +24,50 @@
   color: var(--color-text3);
 }
 
+/* KPI strip */
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 540px) {
+  .kpiStrip { grid-template-columns: 1fr 1fr; }
+}
+
+.kpiItem {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: var(--shadow-sm);
+}
+
+.kpiLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text3);
+}
+
+.kpiVal {
+  font-size: 17px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.kpiSub {
+  font-size: 10.5px;
+  color: var(--color-text3);
+}
+
 /* Simulador */
 .simCard {
   background: var(--color-surface);

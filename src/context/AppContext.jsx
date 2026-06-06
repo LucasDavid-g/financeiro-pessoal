@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react'
 import { saveUserData, loadUserData } from '../services/firebase.js'
 import { getCurrentUser } from '../services/firebase.js'
+import { getContaSaldo } from '../utils/calculators.js'
 
 const AppContext = createContext(null)
 const STORAGE_KEY = 'mapa-do-bolso-state'
@@ -11,7 +12,9 @@ const SYNC_ACTIONS = new Set([
   'ADD_TRANSFER', 'DEL_TRANSFER',
   'ADD_FIXO', 'EDIT_FIXO', 'TOGGLE_FIXO', 'DEL_FIXO',
   'ADD_PARCELA', 'EDIT_PARCELA', 'DEL_PARCELA',
-  'ADD_META', 'DEL_META',
+  'ADD_META', 'DEL_META', 'EDIT_META',
+  'PAGAR_COMPROMISSO',
+  'SET_ORCAMENTO',
 ])
 
 const EMPTY = {
@@ -42,11 +45,17 @@ function reducer(state, action) {
       return { ...state, contas: state.contas.map(c => c.id === action.payload.id ? { ...c, ...action.payload } : c), _lastAction: action.type }
     case 'DEL_CONTA': {
       const id = action.id
-      const novasLancs = state.lancamentos.filter(l => l.contaId !== id)
+      const novasLancs     = state.lancamentos.filter(l => l.contaId !== id)
       const novasTransfers = state.transferencias.filter(t => t.origemId !== id && t.destinoId !== id)
-      const novosFixos = state.fixos.map(f => f.contaId === id ? { ...f, contaId: null } : f)
+      const novosFixos     = state.fixos.map(f => f.contaId === id ? { ...f, contaId: null } : f)
+      // Captura saldo atual ANTES de remover a conta — preserva progresso de metas vinculadas.
+      // Sem o snapshot, meta.atual ficaria no valor do momento da criação (potencialmente anos atrás).
+      const saldoSnapshot  = Math.max(0, getContaSaldo(state, id))
+      const novasMetas     = state.metas.map(m =>
+        m.contaId === id ? { ...m, contaId: null, atual: saldoSnapshot } : m
+      )
       const investsRemovidos = state.lancamentos.filter(l => l.contaId === id && l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
-      return { ...state, contas: state.contas.filter(c => c.id !== id), lancamentos: novasLancs, transferencias: novasTransfers, fixos: novosFixos, reserva: Math.max(0, state.reserva - investsRemovidos), _lastAction: action.type }
+      return { ...state, contas: state.contas.filter(c => c.id !== id), lancamentos: novasLancs, transferencias: novasTransfers, fixos: novosFixos, metas: novasMetas, reserva: Math.max(0, state.reserva - investsRemovidos), _lastAction: action.type }
     }
     case 'PAGAR_COMPROMISSO': {
       // Marca despesa pendente como paga e desconta do saldo
@@ -81,6 +90,8 @@ function reducer(state, action) {
       return { ...state, metas: state.metas.map(m => m.id === action.payload.id ? { ...m, ...action.payload } : m), _lastAction: action.type }
     case 'DEL_META':
       return { ...state, metas: state.metas.filter(m => m.id !== action.id), _lastAction: action.type }
+    case 'SET_ORCAMENTO':
+      return { ...state, orcamento: action.valor, _lastAction: action.type }
     default:
       return state
   }
@@ -102,13 +113,15 @@ export function AppProvider({ children }) {
         try {
           const data = await loadUserData(user.uid)
           if (data) {
+            // Guards contra campos ausentes no Firebase (schema antigo, conta nova, ou dado parcial).
+            // Sem esses guards, .map() em undefined lança TypeError e crasha a inicialização.
             const allIds = [
-              ...data.lancamentos.map(l => parseInt(l.id) || 0),
-              ...data.fixos.map(f => f.id || 0),
-              ...data.parcelas.map(p => p.id || 0),
-              ...data.contas.map(c => c.id || 0),
-              ...data.transferencias.map(t => parseInt(t.id) || 0),
-              ...data.metas.map(m => m.id || 0),
+              ...(data.lancamentos  || []).map(l => parseInt(l.id) || 0),
+              ...(data.fixos        || []).map(f => f.id || 0),
+              ...(data.parcelas     || []).map(p => p.id || 0),
+              ...(data.contas       || []).map(c => c.id || 0),
+              ...(data.transferencias || []).map(t => parseInt(t.id) || 0),
+              ...(data.metas        || []).map(m => m.id || 0),
             ]
             const nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 100
             dispatch({ type: 'LOAD', payload: { ...data, nextId } })

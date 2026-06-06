@@ -526,3 +526,295 @@
   font-family: var(--font-mono);
   flex-shrink: 0;
 }
+
+/* ── Insights ───────────────────────────── */
+.insightsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.insightChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text2);
+  flex: 1 1 240px;
+}
+
+.insightText {
+  line-height: 1.4;
+}
+
+/* ── Saúde financeira ───────────────────── */
+.saudeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.saudeItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.saudeItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.saudeItemLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text3);
+}
+
+.saudeItemVal {
+  font-size: 17px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+}
+
+.saudeItemSub {
+  font-size: 10.5px;
+  color: var(--color-text3);
+}
+
+/* ── Saldo projetado ────────────────────── */
+.projecaoHeader {
+  margin-bottom: 4px;
+}
+
+.projecaoVal {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.04em;
+  margin: 6px 0 4px;
+}
+
+.projecaoBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text3);
+  font-family: var(--font-mono);
+}
+
+/* ── Orçamento mensal ───────────────────── */
+.orcCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.orcTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.orcLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.orcTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text3);
+}
+
+.orcMes {
+  font-size: 11px;
+  color: var(--color-text3);
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 1px 8px;
+}
+
+.orcEditBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text3);
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.orcEditBtn:hover { background: var(--color-surface2); color: var(--color-text); }
+
+.orcEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.orcEmptyText {
+  font-size: 13px;
+  color: var(--color-text3);
+}
+
+.orcSetBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text2);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.orcSetBtn:hover { border-color: var(--color-border2); background: var(--color-surface3); }
+
+.orcEditRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.orcCurrency {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text3);
+  font-family: var(--font-mono);
+}
+
+.orcInput {
+  flex: 1;
+  min-width: 120px;
+  max-width: 200px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border2);
+  background: var(--color-surface2);
+  color: var(--color-text);
+  font-size: 15px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  outline: none;
+}
+.orcInput:focus { border-color: var(--b400); }
+
+.orcConfirmBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: var(--gradient-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.orcRemoveBtn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text3);
+  font-size: 14px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.orcRemoveBtn:hover { background: var(--r50); color: var(--r400); border-color: var(--r400); }
+
+.orcCancelBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text3);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+.orcCancelBtn:hover { color: var(--color-text); }
+
+.orcBody { display: flex; flex-direction: column; gap: 8px; }
+
+.orcValues {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.orcGasto {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.04em;
+}
+
+.orcSep {
+  font-size: 14px;
+  color: var(--color-text3);
+}
+
+.orcLimite {
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--color-text3);
+}
+
+.orcPct {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.orcBarWrap {
+  height: 6px;
+  background: var(--color-surface2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.orcBarFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.orcFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

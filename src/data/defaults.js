@@ -8,13 +8,14 @@ export const DEFAULT_STATE = {
     { id: 5, desc: 'Plano de Saúde',  valor: 174.85, cat: 'saúde',      ativo: true, contaId: null },
   ],
   parcelas: [
-    { id: 1, desc: 'Amazon Prime',        valor: 9.95,   cartao: 'Nubank', atual: 1, total: 999 },
-    { id: 2, desc: 'Clube iFood',         valor: 2.98,   cartao: 'Nubank', atual: 1, total: 999 },
-    { id: 3, desc: 'Churrasqueira',       valor: 27.49,  cartao: 'Nubank', atual: 3, total: 6   },
-    { id: 4, desc: 'Ração Gatos',         valor: 55.36,  cartao: 'Nubank', atual: 2, total: 999 },
-    { id: 5, desc: 'Ração Linda',         valor: 129.00, cartao: 'Nubank', atual: 1, total: 999 },
-    { id: 6, desc: 'Cadeira PC',          valor: 58.49,  cartao: 'Nubank', atual: 3, total: 10  },
-    { id: 7, desc: 'Headset',             valor: 29.70,  cartao: 'Nubank', atual: 3, total: 10  },
+    // cartao deve ser idêntico a conta.nome do cartão correspondente para que getFaturaCartao funcione
+    { id: 1, desc: 'Amazon Prime',  valor: 9.95,   cartao: 'Nubank Cartão', cartaoId: 3, atual: 1, total: 999 },
+    { id: 2, desc: 'Clube iFood',   valor: 2.98,   cartao: 'Nubank Cartão', cartaoId: 3, atual: 1, total: 999 },
+    { id: 3, desc: 'Churrasqueira', valor: 27.49,  cartao: 'Nubank Cartão', cartaoId: 3, atual: 3, total: 6   },
+    { id: 4, desc: 'Ração Gatos',   valor: 55.36,  cartao: 'Nubank Cartão', cartaoId: 3, atual: 2, total: 999 },
+    { id: 5, desc: 'Ração Linda',   valor: 129.00, cartao: 'Nubank Cartão', cartaoId: 3, atual: 1, total: 999 },
+    { id: 6, desc: 'Cadeira PC',    valor: 58.49,  cartao: 'Nubank Cartão', cartaoId: 3, atual: 3, total: 10  },
+    { id: 7, desc: 'Headset',       valor: 29.70,  cartao: 'Nubank Cartão', cartaoId: 3, atual: 3, total: 10  },
   ],
   contas: [
     { id: 1, nome: 'Nubank',        tipo: 'digital',  saldo: 2500,  cor: '#7F77DD' },

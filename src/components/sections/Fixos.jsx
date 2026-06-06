@@ -10,6 +10,7 @@ import { EmptyState } from '../ui/EmptyState.jsx'
 import { CAT_CONFIG, CATEGORIES } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
 import { fmt } from '../../utils/formatters.js'
+import { getFixosTotal, getParcelasTotal } from '../../utils/calculators.js'
 
 const EMPTY_FIXO    = { desc: '', valor: '', cat: 'moradia', contaId: '' }
 const EMPTY_PARCELA = { desc: '', valor: '', cartaoId: '', atual: '', total: '' }
@@ -20,6 +21,8 @@ export function Fixos() {
   const [parcelaModal, setParcelaModal] = useState(false)
   const [fixoForm,     setFixoForm]     = useState({ ...EMPTY_FIXO, editId: null })
   const [parcelaForm,  setParcelaForm]  = useState({ ...EMPTY_PARCELA, editId: null })
+  const [fixoErr,      setFixoErr]      = useState('')
+  const [parcelaErr,   setParcelaErr]   = useState('')
 
   const setF = (k, v) => setFixoForm(f  => ({ ...f, [k]: v }))
   const setP = (k, v) => setParcelaForm(p => ({ ...p, [k]: v }))
@@ -30,7 +33,8 @@ export function Fixos() {
   const opcoesCartoes    = contaOptions(state.contas, 'cartoes')
 
   const saveFixo = () => {
-    if (!fixoForm.desc || !fixoForm.valor) return alert('Preencha os campos.')
+    if (!fixoForm.desc || !fixoForm.valor) return setFixoErr('Preencha descrição e valor.')
+    setFixoErr('')
     const payload = {
       desc: fixoForm.desc,
       valor: parseFloat(fixoForm.valor),
@@ -44,7 +48,7 @@ export function Fixos() {
   }
 
   const saveParcela = () => {
-    if (!parcelaForm.desc || !parcelaForm.valor) return alert('Preencha os campos.')
+    if (!parcelaForm.desc || !parcelaForm.valor) return setParcelaErr('Preencha descrição e valor.')
     // Busca nome do cartão selecionado
     const cartaoConta = state.contas.find(c => c.id === parseInt(parcelaForm.cartaoId))
     const payload = {
@@ -55,6 +59,7 @@ export function Fixos() {
       atual:    parseInt(parcelaForm.atual) || 1,
       total:    parcelaForm.total ? parseInt(parcelaForm.total) : 999,
     }
+    setParcelaErr('')
     if (parcelaForm.editId) dispatch({ type: 'EDIT_PARCELA', payload: { ...payload, id: parcelaForm.editId } })
     else dispatch({ type: 'ADD_PARCELA', payload })
     setParcelaModal(false)
@@ -77,12 +82,15 @@ export function Fixos() {
     </button>
   )
 
+  const totalFixos    = getFixosTotal(state.fixos)
+  const totalParcelas = getParcelasTotal(state.parcelas)
+
   return (
     <div style={{ padding: '0 1.25rem' }}>
       {/* RECORRENTES */}
       <Card>
         <CardHeader
-          title="Recorrentes"
+          title={`Recorrentes · ${fmt(totalFixos)}/mês`}
           action={<Button variant="ghost" icon="ti-plus" onClick={() => { setFixoForm({ ...EMPTY_FIXO, editId: null }); setFixoModal(true) }}>Novo</Button>}
         />
         {state.fixos.length > 0 ? state.fixos.map(f => {
@@ -115,11 +123,11 @@ export function Fixos() {
       {/* PARCELAS */}
       <Card>
         <CardHeader
-          title="Parcelas"
+          title={`Parcelas · ${fmt(totalParcelas)}/mês`}
           action={<Button variant="ghost" icon="ti-plus" onClick={() => { setParcelaForm({ ...EMPTY_PARCELA, editId: null }); setParcelaModal(true) }}>Nova</Button>}
         />
         {opcoesCartoes.length === 0 && (
-          <div style={{ fontSize: 12, color: 'var(--color-text3)', padding: '8px 0', marginBottom: 8, background: 'var(--a50)', borderRadius: 'var(--radius-md)', padding: '10px 12px', color: 'var(--a800)' }}>
+          <div style={{ fontSize: 12, padding: '10px 12px', marginBottom: 8, background: 'var(--a50)', borderRadius: 'var(--radius-md)', color: 'var(--a800)' }}>
             <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
             Para cadastrar parcelas, primeiro adicione um cartão de crédito em <strong>Contas</strong>.
           </div>
@@ -172,9 +180,10 @@ export function Fixos() {
             {opcoesRecorrente.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </FormGroup>
+        {fixoErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{fixoErr}</p>}
         <Button variant="primary" fullWidth onClick={saveFixo}>Salvar</Button>
         <div style={{ height: 8 }} />
-        <Button variant="ghost" fullWidth onClick={() => setFixoModal(false)}>Cancelar</Button>
+        <Button variant="ghost" fullWidth onClick={() => { setFixoModal(false); setFixoErr('') }}>Cancelar</Button>
       </Modal>
 
       {/* MODAL PARCELA */}
@@ -204,9 +213,10 @@ export function Fixos() {
             )}
           </FormGroup>
         </FormRow>
+        {parcelaErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{parcelaErr}</p>}
         <Button variant="primary" fullWidth onClick={saveParcela}>Salvar</Button>
         <div style={{ height: 8 }} />
-        <Button variant="ghost" fullWidth onClick={() => setParcelaModal(false)}>Cancelar</Button>
+        <Button variant="ghost" fullWidth onClick={() => { setParcelaModal(false); setParcelaErr('') }}>Cancelar</Button>
       </Modal>
     </div>
   )

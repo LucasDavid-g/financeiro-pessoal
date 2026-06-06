@@ -16,15 +16,22 @@ const STATUS_OPTS = [
   { value: 'pendente', label: 'Pendente', icon: 'ti-clock',     color: '#F59E0B', bg: 'rgba(245,158,11,.10)' },
 ]
 
+// Formata data local como YYYY-MM-DD sem conversão UTC (evita deslocamento UTC-3)
+const localToday = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 export function Lancamentos() {
   const { state, dispatch } = useApp()
-  const today = new Date().toISOString().slice(0, 10)
 
   const [form, setForm] = useState({
-    tipo: 'despesa', desc: '', valor: '', data: today,
+    tipo: 'despesa', desc: '', valor: '', data: localToday(),
     cat: 'alimentação', contaId: '', status: 'pago',
   })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const [errMsg, setErrMsg] = useState('')
+  const [okMsg,  setOkMsg]  = useState(false)
 
   const contexto    = form.tipo === 'investimento' ? 'investimento' : form.tipo === 'receita' ? 'receita' : 'despesa'
   const opcoes      = contaOptions(state.contas, contexto)
@@ -35,8 +42,19 @@ export function Lancamentos() {
     setForm(f => ({ ...f, tipo: novoTipo, contaId: '', status: novoTipo === 'despesa' ? f.status : 'pago' }))
   }
 
+  // Ao mudar para 'pendente': limpa contaId para evitar despesa pendente vinculada a conta,
+  // o que causaria double-deduction no saldoReal (lançamento debitaria a conta E seria contado
+  // como pendente simultaneamente). Lançamentos pendentes são de contaId=null por definição.
+  const handleStatusChange = (novoStatus) => {
+    setForm(f => ({ ...f, status: novoStatus, contaId: novoStatus === 'pendente' ? '' : f.contaId }))
+  }
+
   const handleSubmit = () => {
-    if (!form.desc || !form.valor || !form.data) return alert('Preencha todos os campos.')
+    if (!form.desc || !form.valor || !form.data) {
+      setErrMsg('Preencha descrição, valor e data.')
+      return
+    }
+    setErrMsg('')
     const payload = {
       ...form,
       valor:   parseFloat(form.valor),
@@ -44,7 +62,9 @@ export function Lancamentos() {
       status:  form.tipo === 'despesa' ? form.status : 'pago',
     }
     dispatch({ type: 'ADD_LANCAMENTO', payload })
-    setForm(f => ({ ...f, desc: '', valor: '' }))
+    setForm(f => ({ ...f, desc: '', valor: '', data: localToday() }))
+    setOkMsg(true)
+    setTimeout(() => setOkMsg(false), 2000)
   }
 
   return (
@@ -124,7 +144,7 @@ export function Lancamentos() {
                     key={s.value}
                     className={[styles.statusBtn, form.status === s.value ? styles.statusBtnActive : ''].join(' ')}
                     style={form.status === s.value ? { background: s.bg, borderColor: s.color, color: s.color } : {}}
-                    onClick={() => set('status', s.value)}
+                    onClick={() => handleStatusChange(s.value)}
                   >
                     <i className={`ti ${s.icon}`} />
                     {s.label}
@@ -182,14 +202,28 @@ export function Lancamentos() {
           </div>
         )}
 
-        {/* Botão */}
+        {/* Erro de validação */}
+        {errMsg && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--r50)', color: 'var(--r800)', fontSize: 13 }}>
+            <i className="ti ti-alert-circle" style={{ fontSize: 15, flexShrink: 0 }} />
+            {errMsg}
+          </div>
+        )}
+
+        {/* Botão de envio */}
         <button
           className={styles.submitBtn}
-          style={{ background: tipoAtivo?.color ? `linear-gradient(135deg, ${tipoAtivo.color}, ${tipoAtivo.color}cc)` : 'var(--gradient-brand)' }}
+          style={{
+            background: okMsg
+              ? 'linear-gradient(135deg,#10B981,#059669)'
+              : tipoAtivo?.color
+                ? `linear-gradient(135deg, ${tipoAtivo.color}, ${tipoAtivo.color}cc)`
+                : 'var(--gradient-brand)',
+          }}
           onClick={handleSubmit}
         >
-          <i className="ti ti-plus" />
-          {isPendente ? 'Registrar compromisso' : `Adicionar ${tipoAtivo?.label || ''}`}
+          <i className={`ti ${okMsg ? 'ti-check' : 'ti-plus'}`} />
+          {okMsg ? 'Adicionado!' : isPendente ? 'Registrar compromisso' : `Adicionar ${tipoAtivo?.label || ''}`}
         </button>
       </div>
     </div>

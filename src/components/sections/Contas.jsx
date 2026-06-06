@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { Modal } from '../ui/Modal.jsx'
 import { FormGroup, FormRow } from '../ui/FormGroup.jsx'
@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState.jsx'
 import { PeriodFilter } from '../ui/PeriodFilter.jsx'
 import { ACCOUNT_COLORS, TIPO_LABEL } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
-import { getContaSaldo, getContaMesStats } from '../../utils/calculators.js'
+import { getContaSaldo, getContaMesStats, getFaturaCartao, getCicloCartao, toLocalISO } from '../../utils/calculators.js'
 import { fmt } from '../../utils/formatters.js'
 import { usePeriod } from '../../hooks/usePeriod.js'
 import styles from './Contas.module.css'
@@ -21,7 +21,7 @@ const TIPO_ICONS = {
 }
 
 const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0], limite: '', vencimento: '', fechamento: '' }
-const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: new Date().toISOString().slice(0, 10) }
+const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: toLocalISO(new Date()) }
 
 export function Contas() {
   const { state, dispatch } = useApp()
@@ -34,16 +34,47 @@ export function Contas() {
   const setT = (k, v) => setTrForm(f => ({ ...f, [k]: v }))
 
   // Mês atual para stats das contas
+  // getMonthKey() já faz +1 internamente, então usamos getMonth() (0-indexed) direto
   const now = new Date()
   const selYear  = now.getFullYear()
-  const selMonth = now.getMonth() + 1
+  const selMonth = now.getMonth()
 
   const patrimonio = state.contas.reduce((s, c) => s + getContaSaldo(state, c.id), 0)
 
   const isCartao = contaForm.tipo === 'cartao'
 
+  // Calcula dias restantes até o dia N do mês (vencimento ou fechamento)
+  // BUG-C03: clamp protege dias 29/30/31 em meses mais curtos
+  const diasAte = (dia) => {
+    if (!dia) return null
+    const hoje = new Date()
+    const hAno = hoje.getFullYear()
+    const hMes = hoje.getMonth()
+    const diaAtual = Math.min(dia, new Date(hAno, hMes + 1, 0).getDate())
+    let d = new Date(hAno, hMes, diaAtual)
+    if (d <= hoje) {
+      const nMes = hMes + 1 > 11 ? 0 : hMes + 1
+      const nAno = hMes + 1 > 11 ? hAno + 1 : hAno
+      const diaProx = Math.min(dia, new Date(nAno, nMes + 1, 0).getDate())
+      d = new Date(nAno, nMes, diaProx)
+    }
+    return Math.ceil((d - hoje) / 86400000)
+  }
+
+  // Ciclos dos cartões — memoizados para evitar recalcular getCicloCartao por cada render
+  const ciclosPorConta = useMemo(() => {
+    const map = {}
+    state.contas.filter(c => c.tipo === 'cartao').forEach(c => {
+      map[c.id] = getCicloCartao(state, c.id)
+    })
+    return map
+  }, [state.contas, state.lancamentos, state.parcelas, state.fixos])
+
+  const [contaErr, setContaErr] = useState('')
+  const [trErr,    setTrErr]    = useState('')
+
   const saveConta = () => {
-    if (!contaForm.nome) return alert('Informe o nome.')
+    if (!contaForm.nome) return setContaErr('Informe o nome da conta.')
     const payload = {
       nome:  contaForm.nome,
       tipo:  contaForm.tipo,
@@ -59,6 +90,7 @@ export function Contas() {
         fechamento: parseInt(contaForm.fechamento)   || null,
       }),
     }
+    setContaErr('')
     if (contaForm.editId) dispatch({ type: 'EDIT_CONTA', payload: { ...payload, id: contaForm.editId } })
     else dispatch({ type: 'ADD_CONTA', payload })
     setContaModal(false)
@@ -67,7 +99,9 @@ export function Contas() {
 
   const saveTransfer = () => {
     const oId = parseInt(trForm.origemId), dId = parseInt(trForm.destinoId)
-    if (!trForm.valor || !trForm.data || oId === dId) return alert('Verifique os dados.')
+    if (!trForm.valor || !trForm.data) return setTrErr('Preencha valor e data.')
+    if (oId === dId || (!oId && !dId)) return setTrErr('Selecione contas diferentes.')
+    setTrErr('')
     dispatch({ type: 'ADD_TRANSFER', payload: { desc: trForm.desc, origemId: oId, destinoId: dId, valor: parseFloat(trForm.valor), data: trForm.data } })
     setTrModal(false)
     setTrForm({ ...EMPTY_TR })
@@ -150,9 +184,10 @@ export function Contas() {
             const icon     = TIPO_ICONS[c.tipo] || 'ti-building-bank'
             const isCard   = c.tipo === 'cartao'
 
-            // Para cartão: saldo é negativo (dívida), fatura = valor positivo
-            const fatura   = isCard ? Math.max(0, -saldo) : 0
-            const limite   = isCard ? (c.limite || 0) : 0
+            // Para cartão: ciclo real (se fechamento configurado) ou fatura total
+            const ciclo      = isCard ? (ciclosPorConta[c.id] ?? null) : null
+            const fatura     = isCard ? (ciclo ? ciclo.faturaAtual : getFaturaCartao(state, c.id)) : 0
+            const limite     = isCard ? (c.limite || 0) : 0
             const disponivel = isCard ? Math.max(0, limite - fatura) : 0
             const utilizPct  = isCard && limite > 0 ? Math.min(100, Math.round((fatura / limite) * 100)) : 0
 
@@ -184,11 +219,29 @@ export function Contas() {
                   /* ── Layout cartão de crédito ── */
                   <>
                     <div className={styles.cartaoFatura}>
-                      <span className={styles.cartaoFaturaLabel}>Fatura atual</span>
+                      <span className={styles.cartaoFaturaLabel}>
+                        {ciclo ? `Ciclo ${ciclo.inicioISO.slice(5)} › ${ciclo.fimISO.slice(5)}` : 'Fatura atual'}
+                      </span>
                       <span className={styles.cartaoFaturaVal} style={{ color: fatura > 0 ? 'var(--r400)' : 'var(--color-text3)' }}>
                         {fmt(fatura)}
                       </span>
                     </div>
+
+                    {/* Breakdown ciclo: compras manuais + mensais */}
+                    {ciclo && ciclo.faturaAtual > 0 && (
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        {ciclo.faturaLancs > 0 && (
+                          <span style={{ fontSize: 11, color: 'var(--color-text3)', background: 'var(--color-surface2)', border: '1px solid var(--color-border)', borderRadius: 20, padding: '1px 8px' }}>
+                            Compras {fmt(ciclo.faturaLancs)}
+                          </span>
+                        )}
+                        {ciclo.mensais > 0 && (
+                          <span style={{ fontSize: 11, color: 'var(--color-text3)', background: 'var(--color-surface2)', border: '1px solid var(--color-border)', borderRadius: 20, padding: '1px 8px' }}>
+                            Mensais {fmt(ciclo.mensais)}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Barra de utilização */}
                     {limite > 0 && (
@@ -222,18 +275,27 @@ export function Contas() {
                     {/* Chips de vencimento / fechamento */}
                     {(c.vencimento || c.fechamento) && (
                       <div className={styles.cartaoChips}>
-                        {c.vencimento && (
-                          <span className={styles.cartaoChip}>
-                            <i className="ti ti-calendar-due" />
-                            Vence dia {c.vencimento}
-                          </span>
-                        )}
-                        {c.fechamento && (
-                          <span className={styles.cartaoChip}>
-                            <i className="ti ti-calendar-x" />
-                            Fecha dia {c.fechamento}
-                          </span>
-                        )}
+                        {c.vencimento && (() => {
+                          const dias = diasAte(c.vencimento)
+                          const urgente = dias !== null && dias <= 5
+                          return (
+                            <span className={styles.cartaoChip} style={urgente ? { borderColor: 'var(--r400)', color: 'var(--r400)' } : {}}>
+                              <i className="ti ti-calendar-due" />
+                              Vence dia {c.vencimento}
+                              {dias !== null && <span style={{ opacity: 0.75 }}> · em {dias}d</span>}
+                            </span>
+                          )
+                        })()}
+                        {c.fechamento && (() => {
+                          const dias = diasAte(c.fechamento)
+                          return (
+                            <span className={styles.cartaoChip}>
+                              <i className="ti ti-calendar-x" />
+                              Fecha dia {c.fechamento}
+                              {dias !== null && <span style={{ opacity: 0.75 }}> · em {dias}d</span>}
+                            </span>
+                          )
+                        })()}
                       </div>
                     )}
                   </>
@@ -369,9 +431,10 @@ export function Contas() {
             ))}
           </div>
         </FormGroup>
+        {contaErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{contaErr}</p>}
         <Button variant="primary" fullWidth onClick={saveConta}>Salvar conta</Button>
         <div style={{ height: 8 }} />
-        <Button variant="ghost" fullWidth onClick={() => setContaModal(false)}>Cancelar</Button>
+        <Button variant="ghost" fullWidth onClick={() => { setContaModal(false); setContaErr('') }}>Cancelar</Button>
       </Modal>
 
       {/* Modal Transferência */}
@@ -395,9 +458,10 @@ export function Contas() {
           <FormGroup label="Valor (R$)"><input type="number" step="0.01" value={trForm.valor} onChange={e => setT('valor', e.target.value)} /></FormGroup>
           <FormGroup label="Data"><input type="date" value={trForm.data} onChange={e => setT('data', e.target.value)} /></FormGroup>
         </FormRow>
+        {trErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{trErr}</p>}
         <Button variant="primary" fullWidth onClick={saveTransfer}>Registrar transferência</Button>
         <div style={{ height: 8 }} />
-        <Button variant="ghost" fullWidth onClick={() => setTrModal(false)}>Cancelar</Button>
+        <Button variant="ghost" fullWidth onClick={() => { setTrModal(false); setTrErr('') }}>Cancelar</Button>
       </Modal>
     </div>
   )

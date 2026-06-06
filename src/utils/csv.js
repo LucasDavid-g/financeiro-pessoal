@@ -1,8 +1,5 @@
-import { getMonthKey } from './formatters.js'
-import { MONTHS_FULL } from '../data/defaults.js'
-
-const applyFilters = (lancamentos, year, month, filters = {}) => {
-  let data = [...lancamentos].filter((l) => l.mes === getMonthKey(year, month))
+const applyFilters = (lancamentos, inicio, fim, filters = {}) => {
+  let data = [...lancamentos].filter((l) => l.data >= inicio && l.data <= fim)
   if (filters.tipo)    data = data.filter((l) => l.tipo === filters.tipo)
   if (filters.contaId) data = data.filter((l) => l.contaId === parseInt(filters.contaId))
   if (filters.busca)   data = data.filter((l) => l.desc.toLowerCase().includes(filters.busca.toLowerCase()))
@@ -13,19 +10,19 @@ const applyFilters = (lancamentos, year, month, filters = {}) => {
   return data
 }
 
-export const exportToCSV = (lancamentos, contas, year, month, filters = {}) => {
-  const data   = applyFilters(lancamentos, year, month, filters)
+export const exportToCSV = (lancamentos, contas, inicio, fim, filters = {}) => {
+  const data   = applyFilters(lancamentos, inicio, fim, filters)
   const header = 'Data,Descrição,Tipo,Categoria,Valor,Conta'
   const rows   = data.map((l) => {
     const conta = contas.find((c) => c.id === l.contaId)
     return [l.data, `"${l.desc}"`, l.tipo, l.cat || l.tipo, l.valor.toFixed(2), conta?.nome || ''].join(',')
   })
-  download('\ufeff' + [header, ...rows].join('\n'), `extrato-${getMonthKey(year, month)}.csv`, 'text/csv;charset=utf-8;')
+  download('﻿' + [header, ...rows].join('\n'), `extrato-${inicio}_${fim}.csv`, 'text/csv;charset=utf-8;')
 }
 
-export const exportToPDF = (lancamentos, contas, year, month, filters = {}) => {
-  const data    = applyFilters(lancamentos, year, month, filters)
-  const mesLabel = `${MONTHS_FULL[month]} ${year}`
+export const exportToPDF = (lancamentos, contas, inicio, fim, filters = {}) => {
+  const data     = applyFilters(lancamentos, inicio, fim, filters)
+  const mesLabel = `${inicio} a ${fim}`
   const totalRec = data.filter(l => l.tipo === 'receita').reduce((s,l) => s+l.valor, 0)
   const totalDes = data.filter(l => l.tipo === 'despesa').reduce((s,l) => s+l.valor, 0)
   const fmt = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })

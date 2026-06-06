@@ -1,0 +1,141 @@
+.info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  gap: 12px;
+}
+
+.infoDesc {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.infoVal {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--color-danger);
+  flex-shrink: 0;
+}
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text3);
+}
+
+.contaList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contaOpt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  width: 100%;
+}
+
+.contaOpt:hover {
+  border-color: var(--accent);
+  background: var(--color-surface3);
+}
+
+.contaOpt.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.contaDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.contaNome {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.contaTipo {
+  font-size: 10.5px;
+  color: var(--color-text3);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--color-text3);
+  text-align: center;
+  padding: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.btnSecondary {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface2);
+  color: var(--color-text2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btnSecondary:hover {
+  background: var(--color-surface3);
+  color: var(--color-text);
+}
+
+.btnPrimary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnPrimary:not(:disabled):hover {
+  filter: brightness(1.1);
+}

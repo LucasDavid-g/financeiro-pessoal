@@ -9,7 +9,8 @@ import { getLancsDoPeriodo, getFixosTotal, getParcelasTotal } from '../../utils/
 import { fmt } from '../../utils/formatters.js'
 import { exportToCSV, exportToPDF } from '../../utils/csv.js'
 import { contaLabel } from '../../utils/contaFilters.js'
-import { usePeriod, periodLabel } from '../../hooks/usePeriod.js'
+import { usePeriod } from '../../hooks/usePeriod.js'
+import { PagarModal } from '../ui/PagarModal.jsx'
 import styles from './Extrato.module.css'
 
 const SORT_OPTS = [
@@ -38,6 +39,7 @@ export function Extrato() {
   const [contaId,       setContaId]       = useState('')
   const [sort,          setSort]          = useState('data-desc')
   const [showRelatorio, setShowRelatorio] = useState(false)
+  const [pagando,       setPagando]       = useState(null)
 
   const filtered = useMemo(() => {
     let data = getLancsDoPeriodo(state.lancamentos, inicio, fim)
@@ -98,8 +100,8 @@ export function Extrato() {
           <p className={styles.pageSub}>{filtered.length} transações encontradas</p>
         </div>
         <div className={styles.exportBtns}>
-          <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, 0, 0, {})}>CSV</Button>
-          <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, 0, 0, {})}>PDF</Button>
+          <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, inicio, fim, {})}>CSV</Button>
+          <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, inicio, fim, {})}>PDF</Button>
         </div>
       </div>
 
@@ -135,8 +137,8 @@ export function Extrato() {
               {[
                 { label: 'Receitas',  value: fmt(totalRec),             color: 'var(--g400)' },
                 { label: 'Despesas',  value: fmt(totalDes),             color: 'var(--r400)' },
-                { label: 'Fixos',     value: fmt(fixos),                color: 'var(--color-text)' },
-                { label: 'Parcelas',  value: fmt(parcelas),             color: 'var(--color-text)' },
+                { label: 'Fixos (atual)',     value: fmt(fixos),    color: 'var(--color-text)' },
+                { label: 'Parcelas (atual)', value: fmt(parcelas), color: 'var(--color-text)' },
                 { label: 'Investido', value: fmt(totalInv),             color: 'var(--a400)' },
                 { label: 'Saldo',     value: fmt(saldoPer),             color: saldoPer >= 0 ? 'var(--g400)' : 'var(--r400)' },
               ].map(item => (
@@ -238,7 +240,7 @@ export function Extrato() {
                     </span>
                     <div className={styles.lancActions}>
                       {isPend && (
-                        <button className={styles.pagarBtn} onClick={() => dispatch({ type: 'PAGAR_COMPROMISSO', id: l.id })}>
+                        <button className={styles.pagarBtn} onClick={() => setPagando(l)}>
                           Pagar
                         </button>
                       )}
@@ -255,6 +257,8 @@ export function Extrato() {
       }) : (
         <EmptyState message="Nenhum lançamento no período selecionado" icon="ti-receipt" />
       )}
+
+      <PagarModal lancamento={pagando} onClose={() => setPagando(null)} />
     </div>
   )
 }
