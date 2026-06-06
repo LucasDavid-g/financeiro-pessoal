@@ -1,6 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react'
-import { saveUserData, loadUserData } from '../services/firebase.js'
-import { getCurrentUser } from '../services/firebase.js'
+import { saveUserData, loadUserData, onAuthChange, getCurrentUser } from '../services/firebase.js'
 import { getContaSaldo } from '../utils/calculators.js'
 
 const AppContext = createContext(null)
@@ -105,10 +104,13 @@ export function AppProvider({ children }) {
 
   useEffect(() => { stateRef.current = state }, [state])
 
-  // Carrega dados na inicialização
+  // Carrega dados na inicialização — usa onAuthChange em vez de getCurrentUser() síncrono.
+  // getCurrentUser() retorna null nos primeiros ~300ms enquanto o Firebase restaura a sessão
+  // do IndexedDB. Em dispositivos sem localStorage (celular, outro browser) isso fazia o app
+  // carregar estado vazio mesmo com o usuário já logado. onAuthChange aguarda a sessão ser
+  // restaurada antes de decidir o que carregar.
   useEffect(() => {
-    const load = async () => {
-      const user = getCurrentUser()
+    const unsubscribe = onAuthChange(async (user) => {
       if (user) {
         try {
           const data = await loadUserData(user.uid)
@@ -131,7 +133,7 @@ export function AppProvider({ children }) {
           console.warn('Firebase load failed:', e)
         }
       }
-      // Fallback: localStorage
+      // Fallback: localStorage (não logado, ou Firebase não tem dados ainda)
       try {
         const saved = localStorage.getItem(STORAGE_KEY)
         if (saved) dispatch({ type: 'LOAD', payload: JSON.parse(saved) })
@@ -139,8 +141,8 @@ export function AppProvider({ children }) {
       } catch {
         dispatch({ type: 'LOAD', payload: {} })
       }
-    }
-    load()
+    })
+    return unsubscribe
   }, [])
 
   // Sync com Firebase
