@@ -70,27 +70,26 @@
   }
 }
 
-/* <=400px: kpiItem em coluna para evitar overflow do valor monetário.
-   Em 320-390px, o espaço horizontal para o valor (60-95px) é insuficiente
-   para "R$ 9.999,99" a 16px mono (~110px). Layout coluna resolve. */
+/* <=400px: mantém o layout em linha (ícone + texto), apenas reduz
+   ícone/fonte/gap e permite que o valor monetário quebre em 2 linhas
+   se precisar — evita overflow sem mudar a estrutura visual do card. */
 @media (max-width: 400px) {
   .kpiItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
     padding: 12px;
+    gap: 8px;
   }
   .kpiIcon {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     font-size: 14px;
   }
   .kpiVal {
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.2;
   }
   .kpiLabel {
     font-size: 9px;
-    margin-top: 0;
+    margin-top: 1px;
   }
 }
 
