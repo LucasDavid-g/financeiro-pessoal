@@ -35,7 +35,7 @@
   margin-bottom: 1rem;
 }
 
-.headerLeft { display: flex; align-items: center; gap: 8px; }
+.headerLeft { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden; }
 
 .headerIcon {
   width: 28px; height: 28px;
@@ -51,6 +51,10 @@
   font-weight: 600;
   color: var(--color-text);
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 .headerSub {
