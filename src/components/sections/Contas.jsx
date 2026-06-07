@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal.jsx'
 import { FormGroup, FormRow } from '../ui/FormGroup.jsx'
 import { Button } from '../ui/Button.jsx'
 import { EmptyState } from '../ui/EmptyState.jsx'
+import { BankLogo } from '../ui/BankLogo.jsx'
 import { PeriodFilter } from '../ui/PeriodFilter.jsx'
 import { ACCOUNT_COLORS, TIPO_LABEL } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
@@ -233,9 +234,7 @@ export function Contas() {
                 <div className={styles.contaAccent} style={{ background: c.cor }} />
 
                 <div className={styles.contaTop}>
-                  <div className={styles.contaIconWrap} style={{ background: c.cor + '20', color: c.cor }}>
-                    <i className={`ti ${icon}`} />
-                  </div>
+                  <BankLogo nome={c.nome} cor={c.cor} size={38} />
                   <div className={styles.contaActions}>
                     <button className={styles.actionBtn} onClick={() => editConta(c)} title="Editar">
                       <i className="ti ti-pencil" />

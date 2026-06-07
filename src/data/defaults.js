@@ -63,3 +63,32 @@ export const RECEITA_CATEGORIES = [
   { id: 'outros',     label: 'Outros',             icon: 'ti-plus'           },
 ]
 export const TIPO_LABEL  = { corrente: 'Conta corrente', poupanca: 'Poupança', investimento: 'Investimento', cartao: 'Cartão de crédito', digital: 'Conta digital' };
+
+export const BANK_LOGOS = {
+  'nubank':          '/banks/nubank.svg',
+  'itaú':            '/banks/itau.svg',
+  'itau':            '/banks/itau.svg',
+  'mercado pago':    '/banks/mercado-pago.svg',
+  'inter':           '/banks/inter.svg',
+  'bradesco':        '/banks/bradesco.svg',
+  'santander':       '/banks/santander.svg',
+  'banco do brasil': '/banks/banco-do-brasil.svg',
+  'bb':              '/banks/banco-do-brasil.svg',
+  'caixa':           '/banks/caixa.svg',
+  'stone':           '/banks/stone.svg',
+  'c6':              '/banks/c6.svg',
+  'pagseguro':       '/banks/pagseguro.svg',
+  'original':        '/banks/original.svg',
+  'sicoob':          '/banks/sicoob.svg',
+  'sicredi':         '/banks/sicredi.svg',
+  'cora':            '/banks/cora.svg',
+  'btg':             '/banks/btg.svg',
+  'safra':           '/banks/safra.svg',
+}
+
+export const getBankLogo = (nomeConta) => {
+  if (!nomeConta) return null
+  const lower = nomeConta.toLowerCase()
+  const key = Object.keys(BANK_LOGOS).find(k => lower.includes(k))
+  return key ? BANK_LOGOS[key] : null
+}
