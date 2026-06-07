@@ -29,6 +29,67 @@
   color: var(--color-text);
 }
 
+/* Breakdown do patrimônio — explica de onde vem o total
+   (investido + disponível + faturas em aberto) */
+.patrimonioBreakdown {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface2);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 280px;
+  position: relative;
+}
+
+/* Separador visual entre o total e o breakdown */
+.patrimonioBreakdown::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.patrimonioRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.patrimonioRowLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.patrimonioRowLabel > i {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.patrimonioRowVal {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .patrimonioBreakdown {
+    max-width: 100%;
+  }
+}
+
 .pageActions {
   display: flex;
   gap: 8px;

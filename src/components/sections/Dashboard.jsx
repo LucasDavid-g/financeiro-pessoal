@@ -140,6 +140,23 @@ export function Dashboard() {
     () => getMesData(state, agoraYear, agoraMonth),
     [state.lancamentos, state.fixos, state.parcelas, agoraYear, agoraMonth]
   )
+  // Mês anterior — usado para comparar receitas/despesas (delta % nos KPIs)
+  const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+  const anteriorRef   = new Date(agoraYear, agoraMonth - 1, 1)
+  const anteriorYear  = anteriorRef.getFullYear()
+  const anteriorMonth = anteriorRef.getMonth()
+  const mesAnteriorData = useMemo(
+    () => getMesData(state, anteriorYear, anteriorMonth),
+    [state.lancamentos, state.fixos, state.parcelas, anteriorYear, anteriorMonth]
+  )
+  const mesAnteriorAbrev = MESES_ABREV[anteriorMonth]
+  const deltaReceitas = mesAnteriorData.receitas > 0
+    ? Math.round(((mesAtualData.receitas - mesAnteriorData.receitas) / mesAnteriorData.receitas) * 100)
+    : null
+  const deltaDespesas = mesAnteriorData.despesas > 0
+    ? Math.round(((mesAtualData.despesas - mesAnteriorData.despesas) / mesAnteriorData.despesas) * 100)
+    : null
+
   const gastosMes    = mesAtualData.despesas   // apenas despesas pagas do mês corrente
   const orcamento    = state.orcamento          // null = não definido
   const orcPct       = orcamento > 0 ? Math.min(100, Math.round((gastosMes / orcamento) * 100)) : 0
@@ -301,43 +318,25 @@ export function Dashboard() {
   return (
     <div className={`dash-grid ${styles.dashboard}`}>
 
-      {/* ── Hero — Patrimônio ─────────────────── */}
-      <div className={`col-7 ${styles.heroCard}`}>
+      {/* ── Hero — Saldo disponível ───────────── */}
+      <div className={`col-12 ${styles.heroCard}`}>
         <div className={styles.heroGlow} />
         <div className={styles.heroGlow2} />
-        <div className={styles.heroLabel}>Patrimônio total</div>
-        <div className={styles.heroValue}>{fmt(patrimonioTotal)}</div>
+        <div className={styles.heroLabel}>Saldo disponível</div>
+        <div className={styles.heroValue} style={{ color: saldoReal >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
+          {fmt(saldoReal)}
+        </div>
+        <div className={styles.heroDesc}>
+          Após descontar {fmt(totalPendente)} comprometido
+        </div>
         <div className={styles.heroStats}>
-          <StatChip icon="ti-wallet"      label="Disponível"    rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
+          <StatChip icon="ti-wallet"      label="Atual"         rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
           <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
           <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
         </div>
         <div className={styles.projetadoLinha}>
           Projetado para o próximo mês: <span style={{ color: saldoProjetado >= 0 ? 'var(--g400)' : 'var(--r400)', fontWeight: 600 }}>
             {fmt(saldoProjetado)}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Saldo disponível ──────────────────── */}
-      <div className={`col-5 ${styles.saldoCard}`}>
-        <div className={styles.saldoLabel}>Saldo disponível</div>
-        <div className={styles.saldoValue} style={{ color: saldoReal >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
-          {fmt(saldoReal)}
-        </div>
-        <div className={styles.saldoDesc}>
-          Após descontar {fmt(totalPendente)} comprometido
-        </div>
-        <div className={styles.saldoBar}>
-          <div className={styles.saldoBarFill} style={{
-            width: saldoDisp > 0 ? `${Math.max(0, Math.min(100, (saldoReal / saldoDisp) * 100))}%` : '0%',
-            background: saldoReal >= 0 ? 'var(--gradient-brand)' : 'var(--gradient-red)',
-          }} />
-        </div>
-        <div className={styles.saldoBarLabels}>
-          <span>0%</span>
-          <span style={{ color: saldoReal >= 0 ? 'var(--g400)' : 'var(--r400)' }}>
-            {saldoDisp > 0 ? Math.round((saldoReal / saldoDisp) * 100) : 0}%
           </span>
         </div>
       </div>
@@ -359,6 +358,8 @@ export function Dashboard() {
           icon="ti-arrow-down-left"
           gradient="linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05))"
           sub={`${taxaPoupanca}% de poupança`}
+          delta={deltaReceitas}
+          deltaLabel={mesAnteriorAbrev}
         />
         <KpiCard
           label="Despesas"
@@ -366,6 +367,8 @@ export function Dashboard() {
           icon="ti-arrow-up-right"
           gradient="linear-gradient(135deg,rgba(244,63,94,.15),rgba(244,63,94,.05))"
           sub="apenas pagas"
+          delta={deltaDespesas == null ? null : -deltaDespesas}
+          deltaLabel={mesAnteriorAbrev}
         />
         <KpiCard
           label="Economia"
@@ -374,14 +377,14 @@ export function Dashboard() {
           gradient={economia >= 0
             ? 'linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05))'
             : 'linear-gradient(135deg,rgba(244,63,94,.15),rgba(244,63,94,.05))'}
-          sub={economia >= 0 ? 'guardado no período' : 'no vermelho'}
+          sub={`${taxaPoupanca}% da receita`}
         />
         <KpiCard
-          label="Comprometido mensal"
-          value={fmt(fixosTotal + parcelasTotal)}
-          icon="ti-repeat"
+          label="Burn rate"
+          value={`${fmt(burnRate)}/dia`}
+          icon="ti-flame"
           gradient="linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05))"
-          sub="fixos + parcelas"
+          sub="gasto diário médio"
         />
       </div>
 

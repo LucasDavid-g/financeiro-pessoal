@@ -32,10 +32,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 8px;
   margin-bottom: 1rem;
 }
 
 .headerLeft { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden; }
+
+/* min-width: 0 é essencial: sem ele, este item flex não encolhe abaixo
+   do min-content do .title (que é "white-space: nowrap" — seu
+   min-content equivale ao texto inteiro sem quebra). Isso forçava
+   .headerLeft / .header / .card a ficarem mais largos que a viewport
+   em telas estreitas, causando overflow horizontal na página inteira
+   (a causa raiz do corte em Fixos no mobile). */
+.titleWrap { min-width: 0; }
 
 .headerIcon {
   width: 28px; height: 28px;
@@ -55,6 +65,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
+}
+
+/* ≤480px: títulos longos (ex: "Receitas Fixas · R$ 5.000,00/mês")
+   quebram em até 2 linhas em vez de truncar com "..." — preserva
+   a informação do valor mensal, que é importante pro usuário ver. */
+@media (max-width: 480px) {
+  .title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+  }
 }
 
 .headerSub {

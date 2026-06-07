@@ -17,7 +17,7 @@ export function CardHeader({ title, sub, action, icon }) {
     <div className={styles.header}>
       <div className={styles.headerLeft}>
         {icon && <div className={styles.headerIcon}><i className={`ti ${icon}`} /></div>}
-        <div>
+        <div className={styles.titleWrap}>
           <span className={styles.title}>{title}</span>
           {sub && <div className={styles.headerSub}>{sub}</div>}
         </div>

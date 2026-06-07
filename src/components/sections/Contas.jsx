@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState.jsx'
 import { PeriodFilter } from '../ui/PeriodFilter.jsx'
 import { ACCOUNT_COLORS, TIPO_LABEL } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
-import { getContaSaldo, getContaMesStats, getFaturaCartao, getCicloCartao, toLocalISO } from '../../utils/calculators.js'
+import { getContaSaldo, getContaMesStats, getFaturaCartao, getCicloCartao, toLocalISO, getSaldoDisponivel, getInvestidoTotal } from '../../utils/calculators.js'
 import { fmt } from '../../utils/formatters.js'
 import { usePeriod } from '../../hooks/usePeriod.js'
 import styles from './Contas.module.css'
@@ -40,6 +40,12 @@ export function Contas() {
   const selMonth = now.getMonth()
 
   const patrimonio = state.contas.reduce((s, c) => s + getContaSaldo(state, c.id), 0)
+  const disponivel = getSaldoDisponivel(state)
+  const investido  = getInvestidoTotal(state)
+  const faturas    = state.contas
+    .filter(c => c.tipo === 'cartao')
+    .reduce((s, c) => s + Math.min(0, getContaSaldo(state, c.id)), 0)
+    // faturas será negativo ou zero
 
   const isCartao = contaForm.tipo === 'cartao'
 
@@ -149,6 +155,34 @@ export function Contas() {
           <p className={styles.pageSub}>
             Patrimônio total: <span className={styles.patrimonioVal}>{fmt(patrimonio)}</span>
           </p>
+          <div className={styles.patrimonioBreakdown}>
+            <div className={styles.patrimonioRow}>
+              <span className={styles.patrimonioRowLabel}>
+                <i className="ti ti-trending-up" /> Investido
+              </span>
+              <span className={styles.patrimonioRowVal} style={{ color: 'var(--g400)' }}>
+                {investido >= 0 ? '+' : '-'}{fmt(Math.abs(investido))}
+              </span>
+            </div>
+            <div className={styles.patrimonioRow}>
+              <span className={styles.patrimonioRowLabel}>
+                <i className="ti ti-wallet" /> Disponível
+              </span>
+              <span className={styles.patrimonioRowVal} style={{ color: 'var(--g400)' }}>
+                {disponivel >= 0 ? '+' : '-'}{fmt(Math.abs(disponivel))}
+              </span>
+            </div>
+            {faturas < 0 && (
+              <div className={styles.patrimonioRow}>
+                <span className={styles.patrimonioRowLabel}>
+                  <i className="ti ti-credit-card" /> Faturas abertas
+                </span>
+                <span className={styles.patrimonioRowVal} style={{ color: 'var(--r400)' }}>
+                  -{fmt(Math.abs(faturas))}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className={styles.pageActions}>
           <Button variant="ghost" icon="ti-arrow-left-right" onClick={() => setTrModal(true)}>Transferir</Button>

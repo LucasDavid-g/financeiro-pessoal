@@ -65,6 +65,13 @@
   .heroValue { font-size: 42px; }
 }
 
+.heroDesc {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  margin-top: -8px;
+  margin-bottom: 1.25rem;
+}
+
 .heroStats {
   display: flex;
   gap: 10px;
