@@ -71,10 +71,10 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom));
     top: auto;
     min-width: unset;
-    max-height: 75dvh;
+    max-height: 70dvh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
