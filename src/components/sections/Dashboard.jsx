@@ -312,7 +312,7 @@ export function Dashboard() {
           <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
           <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
         </div>
-        <div style={{ fontSize: 11, color: 'var(--color-text3)', marginTop: 4 }}>
+        <div className={styles.projetadoLinha}>
           Projetado para o próximo mês: <span style={{ color: saldoProjetado >= 0 ? 'var(--g400)' : 'var(--r400)', fontWeight: 600 }}>
             {fmt(saldoProjetado)}
           </span>

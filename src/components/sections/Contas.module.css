@@ -93,6 +93,47 @@
   }
 }
 
+/* ≤640px: empilha os KPIs verticalmente (um por linha), com
+   ícone+label à esquerda e valor à direita — mesmo padrão usado
+   nos stat chips do Hero Card do Dashboard. Sobrepõe as regras de
+   480px/400px acima (vem depois → maior prioridade no mobile). */
+@media (max-width: 640px) {
+  .kpiStrip {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .kpiStrip > * {
+    grid-column: span 1 !important;
+  }
+  .kpiItem {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+  }
+  .kpiItem > div:last-child {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex: 1;
+  }
+  .kpiVal {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+    margin-left: auto;
+  }
+  .kpiLabel {
+    font-size: 11px;
+    margin-top: 0;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+}
+
 .kpiItem {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

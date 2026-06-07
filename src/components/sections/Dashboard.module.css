@@ -103,6 +103,54 @@
   }
 }
 
+/* ≤640px: empilha os chips verticalmente (um por linha), com
+   label à esquerda e valor à direita em cada linha — layout tipo
+   "lista de KPIs" que cabe melhor em telas estreitas e mantém o
+   valor completo legível sem precisar abreviar. Sobrepõe a regra
+   de ≤480px acima (esta vem depois, então tem prioridade). */
+@media (max-width: 640px) {
+  .heroStats {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .statChip {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    width: 100%;
+  }
+  .statChip > div:last-child {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    gap: 8px;
+  }
+  .statChipLabel {
+    font-size: 11px;
+    margin-bottom: 0;
+  }
+  .statChipValue {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+  }
+}
+
+/* Linha "Projetado para o próximo mês" — sempre ocupa a largura
+   total abaixo dos chips, sem quebrar o layout do hero card */
+.projetadoLinha {
+  font-size: 11px;
+  color: var(--color-text3);
+  margin-top: 8px;
+  width: 100%;
+  text-align: left;
+}
+
 .statChipIcon {
   font-size: 16px;
   flex-shrink: 0;
