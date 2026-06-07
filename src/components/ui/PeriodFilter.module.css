@@ -69,14 +69,27 @@
 @media (max-width: 768px) {
   .dropdown {
     position: fixed;
-    left: 1rem;
-    right: 1rem;
-    top: auto;
+    left: 0;
+    right: 0;
     bottom: 0;
+    top: auto;
     min-width: unset;
+    max-height: 75dvh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: slideUp 0.2s ease both;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     z-index: 500;
+    animation: slideUp 0.2s ease both;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Presets e datas ficam roláveis, footer fica fixo */
+  .dropdownFooter {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-surface2);
+    flex-shrink: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
 

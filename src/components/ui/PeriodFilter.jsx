@@ -49,7 +49,7 @@ export function PeriodFilter({ period, onPreset, onRange, align = 'left' }) {
         <div
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.4)',
+            background: 'rgba(0,0,0,0.5)',
             zIndex: 499
           }}
           onClick={() => setOpen(false)}
