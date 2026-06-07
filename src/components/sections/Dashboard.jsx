@@ -13,7 +13,8 @@ import {
   getDiasReserva, getBurnRate, getSaldoProjetado, getProximasSaidas,
   toLocalISO,
 } from '../../utils/calculators.js'
-import { fmt } from '../../utils/formatters.js'
+import { fmt, fmtCompact } from '../../utils/formatters.js'
+import { useIsMobile } from '../../hooks/useIsMobile.js'
 import { CAT_CONFIG, MONTHS_SHORT } from '../../data/defaults.js'
 import { contaLabel } from '../../utils/contaFilters.js'
 import { Badge }       from '../ui/Badge.jsx'
@@ -32,7 +33,12 @@ const tooltipStyle = {
   displayColors: true, boxWidth: 8, boxHeight: 8,
 }
 
-function StatChip({ icon, label, value, color, bg }) {
+function StatChip({ icon, label, rawValue, color, bg }) {
+  // Em telas estreitas (≤480px), o valor completo ("R$ 999.999,99") não cabe
+  // ao lado do label dentro do chip — usa formato compacto ("R$ 1,00 mi")
+  // só aqui, mantendo o valor completo no desktop e no resto do app.
+  const isMobile = useIsMobile(480)
+  const value = isMobile ? fmtCompact(rawValue) : fmt(rawValue)
   return (
     <div className={styles.statChip} style={{ background: bg }}>
       <div className={styles.statChipIcon} style={{ color }}>
@@ -291,9 +297,9 @@ export function Dashboard() {
         <div className={styles.heroLabel}>Patrimônio total</div>
         <div className={styles.heroValue}>{fmt(patrimonioTotal)}</div>
         <div className={styles.heroStats}>
-          <StatChip icon="ti-wallet"      label="Disponível"    value={fmt(saldoDisp)}    color="#10B981" bg="rgba(16,185,129,0.10)" />
-          <StatChip icon="ti-clock-pause" label="Comprometido"  value={fmt(totalPendente)} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
-          <StatChip icon="ti-trending-up" label="Investido"     value={fmt(investido)}    color="#3B82F6" bg="rgba(59,130,246,0.10)" />
+          <StatChip icon="ti-wallet"      label="Disponível"    rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
+          <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
+          <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
         </div>
       </div>
 

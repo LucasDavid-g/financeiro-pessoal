@@ -89,6 +89,20 @@
   min-width: 0;
 }
 
+/* ≤480px: layout horizontal (ícone ao lado do texto) não cabe — o espaço
+   por chip (~76-113px) é menor que "label + valor" precisam (~95-100px
+   só pro valor). Empilha ícone/label/valor verticalmente, dando à cada
+   um a largura plena do chip. Combinado com fmtCompact() (StatChip),
+   o valor abreviado ("R$ 12,3 mil") cabe numa única linha mesmo no chip
+   mais estreito — sem aumentar a altura do Hero Card. */
+@media (max-width: 480px) {
+  .statChip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
 .statChipIcon {
   font-size: 16px;
   flex-shrink: 0;
@@ -101,17 +115,11 @@
   letter-spacing: 0.06em;
   font-weight: 600;
   margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .statChipValue {
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
