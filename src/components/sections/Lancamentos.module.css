@@ -36,6 +36,14 @@
   gap: 1.25rem;
 }
 
+/* B-01: 1.75rem (28px) de padding lateral em 320px deixa só ~264px
+   de área útil para o formulário/grids internos. Reduz em mobile. */
+@media (max-width: 480px) {
+  .card {
+    padding: 1.25rem;
+  }
+}
+
 /* Tipo selector */
 .tipoGrid {
   display: grid;

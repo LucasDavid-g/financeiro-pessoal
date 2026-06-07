@@ -1,0 +1,128 @@
+/* ── Recorrentes: row de item ────────────────── */
+.fixoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.fixoContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.fixoDesc {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fixoSub {
+  font-size: 11px;
+  color: var(--color-text3);
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fixoRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.fixoVal {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--r400);
+  padding-right: 4px;
+  white-space: nowrap;
+}
+
+/* ── Parcelas: row de item ────────────────────── */
+.parcelaWrap {
+  padding: 9px 0;
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.parcelaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.parcelaContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.parcelaDesc {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.parcelaSub {
+  font-size: 11px;
+  color: var(--color-text3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.parcelaRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.parcelaVal {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--r400);
+  padding-right: 4px;
+  white-space: nowrap;
+}
+
+/* ── Mobile: layout 2 linhas (≤480px) ─────────
+   Linha 1: ícone + conteúdo (desc + subtítulo)
+   Linha 2: valor + badge + ações (alinhado à dir.)
+────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .fixoRow {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 6px;
+  }
+
+  /* Linha 2: fixoRight vai para nova linha, indentado além do ícone */
+  .fixoRight {
+    flex-basis: 100%;
+    padding-left: 40px; /* icon 30px + gap 10px */
+    justify-content: flex-end;
+  }
+
+  .parcelaRow {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 6px;
+  }
+
+  .parcelaRight {
+    flex-basis: 100%;
+    padding-left: 40px;
+    justify-content: flex-end;
+  }
+}

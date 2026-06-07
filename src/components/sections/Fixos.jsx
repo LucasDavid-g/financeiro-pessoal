@@ -11,6 +11,7 @@ import { CAT_CONFIG, CATEGORIES } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
 import { fmt } from '../../utils/formatters.js'
 import { getFixosTotal, getParcelasTotal } from '../../utils/calculators.js'
+import styles from './Fixos.module.css'
 
 const EMPTY_FIXO    = { desc: '', valor: '', cat: 'moradia', contaId: '' }
 const EMPTY_PARCELA = { desc: '', valor: '', cartaoId: '', atual: '', total: '' }
@@ -97,20 +98,25 @@ export function Fixos() {
           const cfg   = CAT_CONFIG[f.cat] || CAT_CONFIG.outro
           const conta = state.contas.find(c => c.id === f.contaId)
           return (
-            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '0.5px solid var(--color-border)' }}>
+            <div key={f.id} className={styles.fixoRow}>
+              {/* Ícone da categoria */}
               <div style={{ width: 30, height: 30, borderRadius: 8, background: cfg.bg, color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, opacity: f.ativo ? 1 : .4, flexShrink: 0 }}>
                 <i className={`ti ${cfg.icon}`} />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, opacity: f.ativo ? 1 : .5 }}>{f.desc}</div>
-                <div style={{ fontSize: 11, color: 'var(--color-text3)', marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {f.cat}
+
+              {/* Linha 1: descrição + subtítulo */}
+              <div className={styles.fixoContent}>
+                <div className={styles.fixoDesc} style={{ opacity: f.ativo ? 1 : .5 }}>{f.desc}</div>
+                <div className={styles.fixoSub}>
+                  <span>{f.cat}</span>
                   {conta && <span>· {contaLabel(conta)}</span>}
                   <Badge variant={f.ativo ? 'g' : 'a'}>{f.ativo ? 'ativo' : 'pausado'}</Badge>
                 </div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-mono)', color: 'var(--r400)', flexShrink: 0 }}>{fmt(f.valor)}</div>
-              <div style={{ display: 'flex', gap: 2 }}>
+
+              {/* Linha 2 (mobile) / direita (desktop): valor + ações */}
+              <div className={styles.fixoRight}>
+                <span className={styles.fixoVal}>{fmt(f.valor)}</span>
                 {iconBtn(() => editFixo(f), 'ti-pencil')}
                 {iconBtn(() => dispatch({ type: 'TOGGLE_FIXO', id: f.id }), f.ativo ? 'ti-player-pause' : 'ti-player-play')}
                 {iconBtn(() => dispatch({ type: 'DEL_FIXO', id: f.id }), 'ti-trash')}
@@ -138,17 +144,22 @@ export function Fixos() {
           const cartaoConta = state.contas.find(c => c.id === p.cartaoId)
           const cartaoLabel = cartaoConta ? contaLabel(cartaoConta) : p.cartao || '—'
           return (
-            <div key={p.id} style={{ padding: '9px 0', borderBottom: '0.5px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div key={p.id} className={styles.parcelaWrap}>
+              <div className={styles.parcelaRow}>
+                {/* Ícone */}
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--r50)', color: 'var(--r400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
                   <i className="ti ti-credit-card" />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{p.desc}</div>
-                  <div style={{ fontSize: 11, color: 'var(--color-text3)' }}>{cartaoLabel} · {inf ? 'recorrente' : `${p.atual}/${p.total}`}</div>
+
+                {/* Linha 1: descrição + subtítulo */}
+                <div className={styles.parcelaContent}>
+                  <div className={styles.parcelaDesc}>{p.desc}</div>
+                  <div className={styles.parcelaSub}>{cartaoLabel} · {inf ? 'recorrente' : `${p.atual}/${p.total}`}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-mono)', color: 'var(--r400)', flexShrink: 0 }}>{fmt(p.valor)}</div>
-                <div style={{ display: 'flex', gap: 2 }}>
+
+                {/* Linha 2 (mobile) / direita (desktop): valor + ações */}
+                <div className={styles.parcelaRight}>
+                  <span className={styles.parcelaVal}>{fmt(p.valor)}</span>
                   {iconBtn(() => editParcela(p), 'ti-pencil')}
                   {iconBtn(() => dispatch({ type: 'DEL_PARCELA', id: p.id }), 'ti-trash')}
                 </div>

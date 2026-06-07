@@ -35,6 +35,23 @@
   flex-shrink: 0;
 }
 
+/* B-04: "Transferir" + "Nova conta" lado a lado em 320px ficam
+   espremidos (texto cortado / botões muito estreitos). Empilha em
+   coluna e ocupa a largura total do header nesse breakpoint. */
+@media (max-width: 480px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pageActions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .pageActions > * {
+    width: 100%;
+  }
+}
+
 /* KPI Strip */
 .kpiStrip {
   display: grid;
@@ -43,8 +60,38 @@
   margin-bottom: 1.25rem;
 }
 
+/* 480px: 2 colunas (cabe 2 KPIs por linha) */
 @media (max-width: 480px) {
   .kpiStrip { grid-template-columns: repeat(2, 1fr); }
+  /* 3º item fica sozinho: faz ele ocupar as 2 colunas */
+  .kpiStrip > *:last-child:nth-child(3n+1),
+  .kpiStrip > *:nth-child(3):last-child {
+    grid-column: span 2;
+  }
+}
+
+/* <=400px: kpiItem em coluna para evitar overflow do valor monetário.
+   Em 320-390px, o espaço horizontal para o valor (60-95px) é insuficiente
+   para "R$ 9.999,99" a 16px mono (~110px). Layout coluna resolve. */
+@media (max-width: 400px) {
+  .kpiItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px;
+  }
+  .kpiIcon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .kpiVal {
+    font-size: 14px;
+  }
+  .kpiLabel {
+    font-size: 9px;
+    margin-top: 0;
+  }
 }
 
 .kpiItem {
@@ -169,6 +216,9 @@
   font-size: 14px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
   transition: var(--transition);
 }
 
@@ -379,11 +429,17 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .transSub {
   font-size: 11px;
   color: var(--color-text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .transVal {

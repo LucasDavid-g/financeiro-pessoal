@@ -387,7 +387,9 @@
 }
 
 .lancVal {
-  font-size: 14px;
+  /* B-03: padronizado para 13px — alinhado com transVal/statVal (Contas)
+     e fixoVal/parcelaVal (Fixos), que já usam 13px para valores em listas. */
+  font-size: 13px;
   font-weight: 700;
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
@@ -408,17 +410,38 @@
   .lancActions { opacity: 1; }
 }
 
+/* <=390px: lançamentos pendentes em 2 linhas.
+   Sem isso, lancRight (valor + Pagar + trash) consome ~171px,
+   deixando apenas ~64px para a descrição em 320px.
+   Com wrap, a descrição ocupa toda a linha 1 e as ações vão para linha 2. */
+@media (max-width: 390px) {
+  .lancItemWrap {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 4px;
+  }
+  .lancRightPend {
+    flex-basis: 100%;
+    padding-left: 44px; /* icon 34px + gap 10px */
+    justify-content: flex-end;
+    gap: 6px;
+  }
+}
+
 .pagarBtn {
   background: var(--g50);
   border: 1px solid var(--g400);
   color: var(--g800);
   border-radius: var(--radius-sm);
-  padding: 4px 8px;
+  padding: 8px 12px;
+  min-height: 36px;
   cursor: pointer;
   font-size: 11px;
   font-family: var(--font-sans);
   font-weight: 600;
   transition: var(--transition);
+  display: flex;
+  align-items: center;
 }
 
 .pagarBtn:hover {
@@ -441,6 +464,9 @@
   font-size: 14px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
   transition: var(--transition);
 }
 

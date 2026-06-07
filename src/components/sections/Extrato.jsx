@@ -218,7 +218,7 @@ export function Extrato() {
               const conta = state.contas.find(c => c.id === l.contaId)
               const isPend = l.status === 'pendente'
               return (
-                <div key={l.id} className={[styles.lancItem, isPend ? styles.lancPend : ''].join(' ')}>
+                <div key={l.id} className={[styles.lancItem, isPend ? styles.lancPend : '', isPend ? styles.lancItemWrap : ''].join(' ')}>
                   <div className={styles.lancIcon} style={{
                     background: isPend ? 'var(--a50)' : cfg.bg,
                     color: isPend ? 'var(--a400)' : cfg.color,
@@ -234,7 +234,7 @@ export function Extrato() {
                       {l.cat || l.tipo}{conta ? ' · ' + contaLabel(conta) : ''}
                     </span>
                   </div>
-                  <div className={styles.lancRight}>
+                  <div className={[styles.lancRight, isPend ? styles.lancRightPend : ''].join(' ')}>
                     <span className={styles.lancVal} style={{ color: l.tipo === 'receita' ? 'var(--g400)' : 'var(--r400)' }}>
                       {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
                     </span>

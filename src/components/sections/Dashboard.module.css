@@ -7,6 +7,9 @@
   background: var(--gradient-hero);
   border-radius: var(--radius-xl);
   padding: 1.75rem 2rem;
+  /* M-05: 2rem de padding lateral comprime demais o conteúdo em 320px
+     (sobra ~256px de área útil para valores como "R$ 999.999,99" + stats).
+     Reduz para 1.25rem mantendo hierarquia visual em telas maiores. */
   border: 1px solid rgba(255,255,255,0.06);
   position: relative;
   overflow: hidden;
@@ -690,6 +693,12 @@
   padding: 4px 6px;
   border-radius: var(--radius-sm);
   transition: var(--transition);
+  /* Área de toque mínima para mobile */
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .orcEditBtn:hover { background: var(--color-surface2); color: var(--color-text); }
 
@@ -841,4 +850,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* ── Mobile (≤480px): reduz padding lateral excessivo ──────────────
+   M-05: heroCard/saldoCard com 2rem (32px) de cada lado sobrava pouco
+   espaço útil em 320px. M-04: chartCard/listCard com 1.5rem (24px)
+   também apertava o conteúdo das listas. Reduz para valores que
+   preservam respiro visual sem desperdiçar largura em telas pequenas. */
+@media (max-width: 480px) {
+  .heroCard,
+  .saldoCard {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .chartCard,
+  .listCard {
+    padding: 1.25rem 1rem;
+  }
+
+  /* B-02: projecaoBreakdown em 11px com cor de baixo contraste e itens
+     colados ficava difícil de ler em telas pequenas. Aumenta o tamanho,
+     o espaçamento entre linhas e dá mais "ar" entre os itens quando
+     quebram em múltiplas linhas. */
+  .projecaoBreakdown {
+    font-size: 12px;
+    line-height: 1.5;
+    row-gap: 4px;
+  }
 }
