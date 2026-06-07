@@ -16,7 +16,8 @@ import {
 } from '../../utils/calculators.js'
 import { fmt, fmtCompact } from '../../utils/formatters.js'
 import { useIsMobile } from '../../hooks/useIsMobile.js'
-import { CAT_CONFIG, MONTHS_SHORT } from '../../data/defaults.js'
+import { CAT_CONFIG, MONTHS_SHORT, getBankLogo } from '../../data/defaults.js'
+import { BankLogo } from '../ui/BankLogo.jsx'
 import { contaLabel } from '../../utils/contaFilters.js'
 import { Badge }       from '../ui/Badge.jsx'
 import { Button }      from '../ui/Button.jsx'
@@ -339,6 +340,47 @@ export function Dashboard() {
             {fmt(saldoProjetado)}
           </span>
         </div>
+        {(() => {
+          const contasOperacionais = state.contas
+            .filter(c => c.tipo === 'corrente' || c.tipo === 'digital')
+            .map(c => ({ ...c, saldoAtual: getContaSaldo(state, c.id) }))
+            .filter(c => c.saldoAtual > 0)
+            .sort((a, b) => b.saldoAtual - a.saldoAtual)
+
+          if (contasOperacionais.length === 0) return null
+
+          return (
+            <>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+              {contasOperacionais.map(conta => (
+                <div key={conta.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '3px 0',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <BankLogo nome={conta.nome} cor={conta.cor} size={18} />
+                    {!getBankLogo(conta.nome) && (
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+                        {conta.nome}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: 11,
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.85)',
+                  }}>
+                    {fmt(conta.saldoAtual)}
+                  </span>
+                </div>
+              ))}
+            </>
+          )
+        })()}
       </div>
 
       {/* ── Filtro de período ─────────────────── */}
