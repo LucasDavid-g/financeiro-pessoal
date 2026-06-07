@@ -16,7 +16,7 @@ import {
 } from '../../utils/calculators.js'
 import { fmt, fmtCompact } from '../../utils/formatters.js'
 import { useIsMobile } from '../../hooks/useIsMobile.js'
-import { CAT_CONFIG, MONTHS_SHORT, getBankLogo } from '../../data/defaults.js'
+import { CAT_CONFIG, MONTHS_SHORT } from '../../data/defaults.js'
 import { BankLogo } from '../ui/BankLogo.jsx'
 import { contaLabel } from '../../utils/contaFilters.js'
 import { Badge }       from '../ui/Badge.jsx'
@@ -330,16 +330,6 @@ export function Dashboard() {
         <div className={styles.heroDesc}>
           Após descontar {fmt(totalPendente)} comprometido
         </div>
-        <div className={styles.heroStats}>
-          <StatChip icon="ti-wallet"      label="Atual"         rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
-          <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
-          <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
-        </div>
-        <div className={styles.projetadoLinha}>
-          Projetado para o próximo mês: <span style={{ color: saldoProjetado >= 0 ? 'var(--g400)' : 'var(--r400)', fontWeight: 600 }}>
-            {fmt(saldoProjetado)}
-          </span>
-        </div>
         {(() => {
           const contasOperacionais = state.contas
             .filter(c => c.tipo === 'corrente' || c.tipo === 'digital')
@@ -350,37 +340,42 @@ export function Dashboard() {
           if (contasOperacionais.length === 0) return null
 
           return (
-            <>
-              <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '10px 0' }}>
               {contasOperacionais.map(conta => (
                 <div key={conta.id} style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  padding: '3px 0',
+                  gap: 6,
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: 10,
+                  padding: '5px 10px',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <BankLogo nome={conta.nome} cor={conta.cor} size={18} />
-                    {!getBankLogo(conta.nome) && (
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                        {conta.nome}
-                      </span>
-                    )}
-                  </div>
+                  <BankLogo nome={conta.nome} cor={conta.cor} size={20} />
                   <span style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontFamily: 'var(--font-mono)',
                     fontWeight: 600,
-                    color: 'rgba(255,255,255,0.85)',
+                    color: 'rgba(255,255,255,0.9)',
+                    whiteSpace: 'nowrap',
                   }}>
                     {fmt(conta.saldoAtual)}
                   </span>
                 </div>
               ))}
-            </>
+            </div>
           )
         })()}
+        <div className={styles.heroStats}>
+          <StatChip icon="ti-wallet"      label="Atual"         rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
+          <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
+          <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
+        </div>
+        <div className={styles.projetadoLinha}>
+          Projetado para o próximo mês: <span style={{ color: saldoProjetado >= 0 ? 'var(--g400)' : 'var(--r400)', fontWeight: 600 }}>
+            {fmt(saldoProjetado)}
+          </span>
+        </div>
       </div>
 
       {/* ── Filtro de período ─────────────────── */}
