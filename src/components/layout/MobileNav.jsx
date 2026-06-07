@@ -21,9 +21,12 @@ export function MobileNav({ active, onChange }) {
             onClick={() => onChange(tab.id)}
           >
             {isLançar ? (
-              <div className={styles.lançarIcon}>
-                <i className={`ti ${tab.icon}`} />
-              </div>
+              <>
+                <div className={styles.lançarIcon}>
+                  <i className={`ti ${tab.icon}`} />
+                </div>
+                <span className={styles.label}>{tab.label}</span>
+              </>
             ) : (
               <>
                 <div className={[styles.iconWrap, isActive ? styles.iconActive : ''].join(' ')}>

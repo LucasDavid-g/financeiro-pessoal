@@ -92,4 +92,16 @@
 }
 .close:hover { background: var(--color-surface3); color: var(--color-text); }
 
-.body { padding: 1.125rem 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 12px; }
+.body {
+  padding: 1.125rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Bottom sheet: padding extra para home bar do iOS */
+@media (max-width: 768px) {
+  .body {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}

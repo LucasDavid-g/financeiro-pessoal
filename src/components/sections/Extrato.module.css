@@ -403,6 +403,11 @@
 
 .lancItem:hover .lancActions { opacity: 1; }
 
+/* Em touch: sem hover real — ações sempre visíveis */
+@media (hover: none) {
+  .lancActions { opacity: 1; }
+}
+
 .pagarBtn {
   background: var(--g50);
   border: 1px solid var(--g400);

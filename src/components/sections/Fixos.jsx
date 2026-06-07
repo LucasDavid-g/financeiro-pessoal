@@ -77,7 +77,7 @@ export function Fixos() {
   }
 
   const iconBtn = (onClick, icon) => (
-    <button onClick={onClick} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 6, color: 'var(--color-text3)', fontSize: 14 }}>
+    <button onClick={onClick} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 6, color: 'var(--color-text3)', fontSize: 14, minWidth: 32, minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <i className={`ti ${icon}`} />
     </button>
   )
@@ -86,7 +86,7 @@ export function Fixos() {
   const totalParcelas = getParcelasTotal(state.parcelas)
 
   return (
-    <div style={{ padding: '0 1.25rem' }}>
+    <div>
       {/* RECORRENTES */}
       <Card>
         <CardHeader

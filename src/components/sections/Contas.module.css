@@ -154,6 +154,11 @@
 
 .contaCard:hover .contaActions { opacity: 1; }
 
+/* Em touch: sem hover real — botões sempre visíveis */
+@media (hover: none) {
+  .contaActions { opacity: 1; }
+}
+
 .actionBtn {
   background: transparent;
   border: none;
