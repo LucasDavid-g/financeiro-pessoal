@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Modal } from './Modal.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { CATEGORIES, CAT_CONFIG } from '../../data/defaults.js'
 import { contaOptions } from '../../utils/contaFilters.js'
-import { Button } from '../ui/Button.jsx'
-import styles from './Lancamentos.module.css'
+import { Button } from './Button.jsx'
+import styles from '../sections/Lancamentos.module.css'
 
 const TIPOS = [
   { id: 'despesa',      label: 'Despesa',      icon: 'ti-arrow-up-right',   color: '#F43F5E', bg: 'rgba(244,63,94,.08)'   },
@@ -11,31 +12,40 @@ const TIPOS = [
   { id: 'investimento', label: 'Investimento', icon: 'ti-trending-up',      color: '#3B82F6', bg: 'rgba(59,130,246,.08)'  },
 ]
 
-// Formata data local como YYYY-MM-DD sem conversão UTC (evita deslocamento UTC-3)
 const localToday = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-export function Lancamentos() {
+// lancamento: objeto completo do lançamento a editar
+// onClose: fecha o modal
+export function EditarLancamentoModal({ lancamento, onClose }) {
   const { state, dispatch } = useApp()
-
-  const [form, setForm] = useState({
-    tipo: 'despesa', desc: '', valor: '', data: localToday(),
-    cat: 'alimentação', contaId: '',
-  })
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const [form, setForm] = useState(null)
   const [errMsg, setErrMsg] = useState('')
-  const [okMsg,  setOkMsg]  = useState(false)
 
-  const contexto    = form.tipo === 'investimento' ? 'investimento' : form.tipo === 'receita' ? 'receita' : 'despesa'
-  const opcoes      = contaOptions(state.contas, contexto)
-  const tipoAtivo   = TIPOS.find(t => t.id === form.tipo)
-  const isPendente  = form.data > localToday() && form.tipo !== 'investimento'
+  useEffect(() => {
+    if (lancamento) {
+      setForm({
+        tipo: lancamento.tipo,
+        desc: lancamento.desc,
+        valor: String(lancamento.valor),
+        data: lancamento.data,
+        cat: lancamento.cat || 'outro',
+        contaId: lancamento.contaId ? String(lancamento.contaId) : '',
+      })
+      setErrMsg('')
+    } else {
+      setForm(null)
+    }
+  }, [lancamento])
 
-  const handleTipoChange = (novoTipo) => {
-    setForm(f => ({ ...f, tipo: novoTipo, contaId: '' }))
-  }
+  if (!lancamento || !form) return null
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const contexto  = form.tipo === 'investimento' ? 'investimento' : form.tipo === 'receita' ? 'receita' : 'despesa'
+  const opcoes    = contaOptions(state.contas, contexto)
+  const tipoAtivo = TIPOS.find(t => t.id === form.tipo)
 
   const handleSubmit = () => {
     if (!form.desc || !form.valor || !form.data) {
@@ -43,26 +53,25 @@ export function Lancamentos() {
       return
     }
     setErrMsg('')
-    const payload = {
-      ...form,
-      valor:   parseFloat(form.valor),
-      contaId: form.contaId ? parseInt(form.contaId) : null,
-      status: form.tipo === 'investimento' ? 'pago' : (form.data > localToday() ? 'pendente' : 'pago'),
-    }
-    dispatch({ type: 'ADD_LANCAMENTO', payload })
-    setForm(f => ({ ...f, desc: '', valor: '', data: localToday() }))
-    setOkMsg(true)
-    setTimeout(() => setOkMsg(false), 2000)
+    dispatch({
+      type: 'EDIT_LANCAMENTO',
+      payload: {
+        ...form,
+        id: lancamento.id,
+        valor: parseFloat(form.valor),
+        contaId: form.contaId ? parseInt(form.contaId) : null,
+        // Status sempre derivado da data — regra universal do projeto.
+        // Não é exposto como campo editável: muda automaticamente conforme a data.
+        status: form.tipo === 'investimento' ? 'pago' : (form.data > localToday() ? 'pendente' : 'pago'),
+        mes: form.data.slice(0, 7),
+      },
+    })
+    onClose()
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Novo lançamento</h2>
-        <p className={styles.sub}>Registre uma receita, despesa ou investimento</p>
-      </div>
-
-      <div className={styles.card}>
+    <Modal open={!!lancamento} onClose={onClose} title="Editar lançamento">
+      <div className={styles.card} style={{ border: 'none', boxShadow: 'none', background: 'transparent', padding: 0 }}>
 
         {/* Seletor de tipo */}
         <div className={styles.tipoGrid}>
@@ -71,7 +80,7 @@ export function Lancamentos() {
               key={t.id}
               className={[styles.tipoBtn, form.tipo === t.id ? styles.tipoBtnActive : ''].join(' ')}
               style={form.tipo === t.id ? { borderColor: t.color, background: t.bg } : {}}
-              onClick={() => handleTipoChange(t.id)}
+              onClick={() => set('tipo', t.id)}
             >
               <div className={styles.tipoBtnIcon} style={form.tipo === t.id ? { color: t.color } : {}}>
                 <i className={`ti ${t.icon}`} />
@@ -83,7 +92,7 @@ export function Lancamentos() {
           ))}
         </div>
 
-        {/* Campo valor — destaque */}
+        {/* Valor */}
         <div className={styles.valorSection}>
           <label className={styles.valorLabel}>Valor</label>
           <div className={styles.valorInputWrap}>
@@ -104,33 +113,22 @@ export function Lancamentos() {
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>Descrição</label>
           <input
-            placeholder="ex: Mercado, Salário, Aporte..."
             value={form.desc}
             onChange={e => set('desc', e.target.value)}
             className={styles.fieldInput}
           />
         </div>
 
-        {/* Data + Status */}
-        <div className={styles.row2}>
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Data</label>
-            <input
-              type="date"
-              value={form.data}
-              onChange={e => set('data', e.target.value)}
-              className={styles.fieldInput}
-            />
-          </div>
+        {/* Data */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>Data</label>
+          <input
+            type="date"
+            value={form.data}
+            onChange={e => set('data', e.target.value)}
+            className={styles.fieldInput}
+          />
         </div>
-
-        {/* Pendente info */}
-        {isPendente && (
-          <div className={styles.pendInfo}>
-            <i className="ti ti-info-circle" />
-            <span>Data futura: este lançamento entra como pendente e só afeta o saldo quando a data chegar.</span>
-          </div>
-        )}
 
         {/* Categoria — apenas despesas */}
         {form.tipo === 'despesa' && (
@@ -169,7 +167,6 @@ export function Lancamentos() {
           </select>
         </div>
 
-        {/* Erro de validação */}
         {errMsg && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--r50)', color: 'var(--r800)', fontSize: 13 }}>
             <i className="ti ti-alert-circle" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -177,22 +174,10 @@ export function Lancamentos() {
           </div>
         )}
 
-        {/* Botão de envio */}
-        <button
-          className={styles.submitBtn}
-          style={{
-            background: okMsg
-              ? 'linear-gradient(135deg,#10B981,#059669)'
-              : tipoAtivo?.color
-                ? `linear-gradient(135deg, ${tipoAtivo.color}, ${tipoAtivo.color}cc)`
-                : 'var(--gradient-brand)',
-          }}
-          onClick={handleSubmit}
-        >
-          <i className={`ti ${okMsg ? 'ti-check' : 'ti-plus'}`} />
-          {okMsg ? 'Adicionado!' : isPendente ? 'Registrar compromisso' : `Adicionar ${tipoAtivo?.label || ''}`}
-        </button>
+        <Button variant="primary" fullWidth onClick={handleSubmit}>Salvar alterações</Button>
+        <div style={{ height: 8 }} />
+        <Button variant="ghost" fullWidth onClick={onClose}>Cancelar</Button>
       </div>
-    </div>
+    </Modal>
   )
 }

@@ -1,18 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
 import { PRESETS, getPresetRange, periodLabel } from '../../hooks/usePeriod.js'
+import { useIsMobile } from '../../hooks/useIsMobile.js'
 import styles from './PeriodFilter.module.css'
 
 export function PeriodFilter({ period, onPreset, onRange, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const isMobile = useIsMobile(768)
 
-  // Fechar ao clicar fora
+  // Fechar ao clicar fora — touchstart é necessário porque em mobile os
+  // toques disparam touchstart antes de mousedown (o dropdown abria e
+  // fechava imediatamente sem o listener de touch).
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
   }, [])
 
   const handlePreset = (id) => {
@@ -35,6 +43,18 @@ export function PeriodFilter({ period, onPreset, onRange, align = 'left' }) {
         <span className={styles.pillLabel}>{label}</span>
         <i className={`ti ${open ? 'ti-chevron-up' : 'ti-chevron-down'} ${styles.pillArrow}`} />
       </button>
+
+      {/* Overlay mobile — fecha o bottom sheet ao tocar fora */}
+      {open && isMobile && (
+        <div
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 499
+          }}
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       {/* Dropdown */}
       {open && (

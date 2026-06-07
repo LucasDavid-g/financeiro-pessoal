@@ -53,4 +53,13 @@ export const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Se
 export const MONTHS_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 export const CATEGORIES = ['alimentação','moradia','transporte','saúde','lazer','pets','assinatura','cartão','outro'];
+
+export const RECEITA_CATEGORIES = [
+  { id: 'salario',    label: 'Salário',           icon: 'ti-briefcase'      },
+  { id: 'freelance',  label: 'Freelance / PJ',    icon: 'ti-device-laptop'  },
+  { id: 'rendimento', label: 'Rendimentos',        icon: 'ti-chart-line'     },
+  { id: 'aluguel',    label: 'Aluguel recebido',   icon: 'ti-home-dollar'    },
+  { id: 'bonus',      label: 'Bônus / Comissão',   icon: 'ti-target'         },
+  { id: 'outros',     label: 'Outros',             icon: 'ti-plus'           },
+]
 export const TIPO_LABEL  = { corrente: 'Conta corrente', poupanca: 'Poupança', investimento: 'Investimento', cartao: 'Cartão de crédito', digital: 'Conta digital' };

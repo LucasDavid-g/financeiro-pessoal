@@ -7,26 +7,36 @@ import { Button } from '../ui/Button.jsx'
 import { Badge } from '../ui/Badge.jsx'
 import { ProgressBar } from '../ui/ProgressBar.jsx'
 import { EmptyState } from '../ui/EmptyState.jsx'
-import { CAT_CONFIG, CATEGORIES } from '../../data/defaults.js'
+import { CAT_CONFIG, CATEGORIES, RECEITA_CATEGORIES } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
 import { fmt } from '../../utils/formatters.js'
-import { getFixosTotal, getParcelasTotal } from '../../utils/calculators.js'
+import { getFixosTotal, getParcelasTotal, getReceitasFixasTotal } from '../../utils/calculators.js'
 import styles from './Fixos.module.css'
 
-const EMPTY_FIXO    = { desc: '', valor: '', cat: 'moradia', contaId: '' }
+const EMPTY_FIXO    = { desc: '', valor: '', cat: 'moradia', contaId: '', dia: '' }
 const EMPTY_PARCELA = { desc: '', valor: '', cartaoId: '', atual: '', total: '' }
+const EMPTY_REC_FIXA = { desc: '', valor: '', dia: '', cat: 'salario', contaId: '' }
+
+const recCatConfig = (id) => {
+  const c = RECEITA_CATEGORIES.find(r => r.id === id) || RECEITA_CATEGORIES[RECEITA_CATEGORIES.length - 1]
+  return { icon: c.icon, color: '#10B981', bg: 'rgba(16,185,129,.10)', label: c.label }
+}
 
 export function Fixos() {
   const { state, dispatch } = useApp()
   const [fixoModal,    setFixoModal]    = useState(false)
   const [parcelaModal, setParcelaModal] = useState(false)
+  const [recFixaModal, setRecFixaModal] = useState(false)
   const [fixoForm,     setFixoForm]     = useState({ ...EMPTY_FIXO, editId: null })
   const [parcelaForm,  setParcelaForm]  = useState({ ...EMPTY_PARCELA, editId: null })
+  const [recFixaForm,  setRecFixaForm]  = useState({ ...EMPTY_REC_FIXA, editId: null })
   const [fixoErr,      setFixoErr]      = useState('')
   const [parcelaErr,   setParcelaErr]   = useState('')
+  const [recFixaErr,   setRecFixaErr]   = useState('')
 
-  const setF = (k, v) => setFixoForm(f  => ({ ...f, [k]: v }))
-  const setP = (k, v) => setParcelaForm(p => ({ ...p, [k]: v }))
+  const setF  = (k, v) => setFixoForm(f  => ({ ...f, [k]: v }))
+  const setP  = (k, v) => setParcelaForm(p => ({ ...p, [k]: v }))
+  const setRF = (k, v) => setRecFixaForm(r => ({ ...r, [k]: v }))
 
   // Contas disponíveis para recorrentes (corrente, digital, poupança, cartão)
   const opcoesRecorrente = contaOptions(state.contas, 'recorrente')
@@ -41,6 +51,7 @@ export function Fixos() {
       valor: parseFloat(fixoForm.valor),
       cat: fixoForm.cat,
       contaId: fixoForm.contaId ? parseInt(fixoForm.contaId) : null,
+      dia: fixoForm.dia ? parseInt(fixoForm.dia) : null,
     }
     if (fixoForm.editId) dispatch({ type: 'EDIT_FIXO', payload: { ...payload, id: fixoForm.editId } })
     else dispatch({ type: 'ADD_FIXO', payload })
@@ -67,8 +78,31 @@ export function Fixos() {
     setParcelaForm({ ...EMPTY_PARCELA, editId: null })
   }
 
+  const saveRecFixa = () => {
+    if (!recFixaForm.desc || !recFixaForm.valor || !recFixaForm.dia) return setRecFixaErr('Preencha descrição, valor e dia.')
+    const dia = parseInt(recFixaForm.dia)
+    if (dia < 1 || dia > 31) return setRecFixaErr('Dia deve ser entre 1 e 31.')
+    setRecFixaErr('')
+    const payload = {
+      desc: recFixaForm.desc,
+      valor: parseFloat(recFixaForm.valor),
+      dia,
+      cat: recFixaForm.cat,
+      contaId: recFixaForm.contaId ? parseInt(recFixaForm.contaId) : null,
+    }
+    if (recFixaForm.editId) dispatch({ type: 'EDIT_RECEITA_FIXA', payload: { ...payload, id: recFixaForm.editId } })
+    else dispatch({ type: 'ADD_RECEITA_FIXA', payload })
+    setRecFixaModal(false)
+    setRecFixaForm({ ...EMPTY_REC_FIXA, editId: null })
+  }
+
+  const editRecFixa = (r) => {
+    setRecFixaForm({ desc: r.desc, valor: r.valor, dia: r.dia, cat: r.cat, contaId: r.contaId || '', editId: r.id })
+    setRecFixaModal(true)
+  }
+
   const editFixo = (f) => {
-    setFixoForm({ desc: f.desc, valor: f.valor, cat: f.cat, contaId: f.contaId || '', editId: f.id })
+    setFixoForm({ desc: f.desc, valor: f.valor, cat: f.cat, contaId: f.contaId || '', dia: f.dia || '', editId: f.id })
     setFixoModal(true)
   }
 
@@ -85,9 +119,43 @@ export function Fixos() {
 
   const totalFixos    = getFixosTotal(state.fixos)
   const totalParcelas = getParcelasTotal(state.parcelas)
+  const totalRecFixas = getReceitasFixasTotal(state.receitasFixas)
 
   return (
     <div>
+      {/* RECEITAS FIXAS */}
+      <Card>
+        <CardHeader
+          title={`Receitas Fixas · ${fmt(totalRecFixas)}/mês`}
+          action={<Button variant="ghost" icon="ti-plus" onClick={() => { setRecFixaForm({ ...EMPTY_REC_FIXA, editId: null }); setRecFixaModal(true) }}>Nova Receita Fixa</Button>}
+        />
+        {(state.receitasFixas || []).length > 0 ? state.receitasFixas.map(r => {
+          const cfg   = recCatConfig(r.cat)
+          const conta = state.contas.find(c => c.id === r.contaId)
+          return (
+            <div key={r.id} className={styles.fixoRow}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: cfg.bg, color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, opacity: r.ativo ? 1 : .4, flexShrink: 0 }}>
+                <i className={`ti ${cfg.icon}`} />
+              </div>
+              <div className={styles.fixoContent}>
+                <div className={styles.fixoDesc} style={{ opacity: r.ativo ? 1 : .5 }}>{r.desc}</div>
+                <div className={styles.fixoSub}>
+                  <span>todo dia {r.dia}</span>
+                  {conta && <span>· {contaLabel(conta)}</span>}
+                  <Badge variant={r.ativo ? 'g' : 'a'}>{r.ativo ? 'ativo' : 'pausado'}</Badge>
+                </div>
+              </div>
+              <div className={styles.fixoRight}>
+                <span className={styles.fixoVal} style={{ color: 'var(--g400)' }}>{fmt(r.valor)}</span>
+                {iconBtn(() => editRecFixa(r), 'ti-pencil')}
+                {iconBtn(() => dispatch({ type: 'TOGGLE_RECEITA_FIXA', id: r.id }), r.ativo ? 'ti-player-pause' : 'ti-player-play')}
+                {iconBtn(() => dispatch({ type: 'DEL_RECEITA_FIXA', id: r.id }), 'ti-trash')}
+              </div>
+            </div>
+          )
+        }) : <EmptyState message="Nenhuma receita fixa cadastrada" />}
+      </Card>
+
       {/* RECORRENTES */}
       <Card>
         <CardHeader
@@ -109,6 +177,7 @@ export function Fixos() {
                 <div className={styles.fixoDesc} style={{ opacity: f.ativo ? 1 : .5 }}>{f.desc}</div>
                 <div className={styles.fixoSub}>
                   <span>{f.cat}</span>
+                  {f.dia && <span>· vence dia {f.dia}</span>}
                   {conta && <span>· {contaLabel(conta)}</span>}
                   <Badge variant={f.ativo ? 'g' : 'a'}>{f.ativo ? 'ativo' : 'pausado'}</Badge>
                 </div>
@@ -191,6 +260,9 @@ export function Fixos() {
             {opcoesRecorrente.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </FormGroup>
+        <FormGroup label="Dia de vencimento (opcional)">
+          <input type="number" min="1" max="31" placeholder="ex: 10" value={fixoForm.dia} onChange={e => setF('dia', e.target.value)} />
+        </FormGroup>
         {fixoErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{fixoErr}</p>}
         <Button variant="primary" fullWidth onClick={saveFixo}>Salvar</Button>
         <div style={{ height: 8 }} />
@@ -228,6 +300,37 @@ export function Fixos() {
         <Button variant="primary" fullWidth onClick={saveParcela}>Salvar</Button>
         <div style={{ height: 8 }} />
         <Button variant="ghost" fullWidth onClick={() => { setParcelaModal(false); setParcelaErr('') }}>Cancelar</Button>
+      </Modal>
+      {/* MODAL RECEITA FIXA */}
+      <Modal open={recFixaModal} onClose={() => setRecFixaModal(false)} title={recFixaForm.editId ? 'Editar receita fixa' : 'Nova receita fixa'}>
+        <FormGroup label="Descrição">
+          <input value={recFixaForm.desc} onChange={e => setRF('desc', e.target.value)} placeholder="ex: Salário, Aluguel recebido..." />
+        </FormGroup>
+        <FormRow>
+          <FormGroup label="Valor (R$)">
+            <input type="number" step="0.01" value={recFixaForm.valor} onChange={e => setRF('valor', e.target.value)} />
+          </FormGroup>
+          <FormGroup label="Dia do mês">
+            <input type="number" min="1" max="31" value={recFixaForm.dia} onChange={e => setRF('dia', e.target.value)} />
+          </FormGroup>
+        </FormRow>
+        <FormRow>
+          <FormGroup label="Categoria">
+            <select value={recFixaForm.cat} onChange={e => setRF('cat', e.target.value)}>
+              {RECEITA_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </FormGroup>
+          <FormGroup label="Conta que recebe">
+            <select value={recFixaForm.contaId} onChange={e => setRF('contaId', e.target.value)}>
+              <option value="">— nenhuma —</option>
+              {opcoesRecorrente.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </FormGroup>
+        </FormRow>
+        {recFixaErr && <p style={{ fontSize: 12, color: 'var(--r400)', margin: 0 }}>{recFixaErr}</p>}
+        <Button variant="primary" fullWidth onClick={saveRecFixa}>Salvar</Button>
+        <div style={{ height: 8 }} />
+        <Button variant="ghost" fullWidth onClick={() => { setRecFixaModal(false); setRecFixaErr('') }}>Cancelar</Button>
       </Modal>
     </div>
   )

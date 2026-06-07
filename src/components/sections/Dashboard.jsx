@@ -10,7 +10,8 @@ import {
   getFixosTotal, getParcelasTotal, getInvestidoTotal,
   getSaldoDisponivel, getTotalPendente, getSaldoReal,
   getCompromissosPendentes, getContaSaldo, getMesData,
-  getDiasReserva, getBurnRate, getSaldoProjetado, getProximasSaidas,
+  getDiasReserva, getBurnRate, getSaldoProjetado, getProximasSaidas, getProximosVencimentos,
+  getReceitasPendentes, getTotalReceitasPendentes,
   toLocalISO,
 } from '../../utils/calculators.js'
 import { fmt, fmtCompact } from '../../utils/formatters.js'
@@ -121,6 +122,11 @@ export function Dashboard() {
     [state.contas, saldosPorConta]
   )
 
+  const receitasPendentes = useMemo(
+    () => getReceitasPendentes(state),
+    [state.lancamentos]
+  )
+
   const compromissos = useMemo(
     () => getCompromissosPendentes(state),
     [state.lancamentos]
@@ -160,6 +166,11 @@ export function Dashboard() {
   const proximasSaidas = useMemo(
     () => getProximasSaidas(state).slice(0, 5),
     [state.lancamentos, state.contas, state.fixos, state.parcelas]
+  )
+
+  const proximosEventos = useMemo(
+    () => getProximosVencimentos(state).slice(0, 6),
+    [state.lancamentos, state.fixos, state.receitasFixas]
   )
 
   // Insights automáticos
@@ -300,6 +311,11 @@ export function Dashboard() {
           <StatChip icon="ti-wallet"      label="Disponível"    rawValue={saldoDisp}     color="#10B981" bg="rgba(16,185,129,0.10)" />
           <StatChip icon="ti-clock-pause" label="Comprometido"  rawValue={totalPendente} color="#F59E0B" bg="rgba(245,158,11,0.10)" />
           <StatChip icon="ti-trending-up" label="Investido"     rawValue={investido}     color="#3B82F6" bg="rgba(59,130,246,0.10)" />
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--color-text3)', marginTop: 4 }}>
+          Projetado para o próximo mês: <span style={{ color: saldoProjetado >= 0 ? 'var(--g400)' : 'var(--r400)', fontWeight: 600 }}>
+            {fmt(saldoProjetado)}
+          </span>
         </div>
       </div>
 
@@ -616,34 +632,68 @@ export function Dashboard() {
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <SectionTitle title="Próximas saídas" sub={proximasSaidas.length > 0 ? `${proximasSaidas.length} itens` : ''} />
-          {proximasSaidas.length > 0 ? (
+          <SectionTitle title="Próximos eventos" sub={proximosEventos.length > 0 ? `${proximosEventos.length} itens` : ''} />
+          {proximosEventos.length > 0 ? (
             <div className={styles.listBody}>
-              {proximasSaidas.map(s => (
-                <div key={s.id} className={styles.listItem}>
-                  <div className={styles.listItemIcon} style={{
-                    background: s.tipo === 'fatura' ? 'rgba(59,130,246,.10)' : 'rgba(245,158,11,.10)',
-                    color: s.tipo === 'fatura' ? 'var(--b400)' : 'var(--a400)',
-                  }}>
-                    <i className={`ti ${s.tipo === 'fatura' ? 'ti-credit-card' : 'ti-clock'}`} />
+              {proximosEventos.map(ev => {
+                const isReceita = ev.tipo === 'receita_fixa' || ev.tipo === 'receita_avulsa'
+                const cor = isReceita ? 'var(--g400)' : 'var(--r400)'
+                const bg  = isReceita ? 'rgba(16,185,129,.10)' : 'rgba(244,63,94,.10)'
+                const icon = ev.tipo === 'despesa_fixa' || ev.tipo === 'receita_fixa' ? 'ti-repeat' : 'ti-clock'
+                return (
+                  <div key={ev.id} className={styles.listItem}>
+                    <div className={styles.listItemIcon} style={{ background: bg, color: cor }}>
+                      <i className={`ti ${icon}`} />
+                    </div>
+                    <div className={styles.listItemInfo}>
+                      <span className={styles.listItemName}>{ev.desc}</span>
+                      <span className={styles.listItemSub}>{ev.data}</span>
+                    </div>
+                    <div className={styles.listItemRight}>
+                      <span className={styles.listItemVal} style={{ color: cor }}>
+                        {isReceita ? '+' : '-'}{fmt(ev.valor)}
+                      </span>
+                      {ev.tipo === 'despesa_avulsa' && (
+                        <Button small variant="success" onClick={() => setPagando(compromissos.find(c => c.id === parseInt(ev.id.replace('lanc-', ''))))}>Pagar</Button>
+                      )}
+                      {ev.tipo === 'receita_avulsa' && ev.id.startsWith('rec-') && (
+                        <Button small variant="success" onClick={() => dispatch({ type: 'RECEBER_RECEITA', id: parseInt(ev.id.replace('rec-', '')) })}>Receber</Button>
+                      )}
+                    </div>
                   </div>
-                  <div className={styles.listItemInfo}>
-                    <span className={styles.listItemName}>{s.desc}</span>
-                    <span className={styles.listItemSub}>{s.data}</span>
-                  </div>
-                  <div className={styles.listItemRight}>
-                    <span className={styles.listItemVal} style={{ color: 'var(--r400)' }}>{fmt(s.valor)}</span>
-                    {s.tipo === 'pendente' && (
-                      <Button small variant="success" onClick={() => setPagando(compromissos.find(c => c.id === s.lancId))}>Pagar</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
-            <EmptyState message="Nenhuma saída prevista" icon="ti-calendar-check" compact />
+            <EmptyState message="Nenhum evento previsto" icon="ti-calendar-check" compact />
           )}
         </div>
+      </div>
+
+      {/* ── Próximas Receitas ── */}
+      <div className={`col-8 ${styles.listCard}`}>
+        <SectionTitle title="Próximas receitas" sub={receitasPendentes.length > 0 ? `${receitasPendentes.length} itens` : ''} />
+        {receitasPendentes.length > 0 ? (
+          <div className={styles.listBody}>
+            {receitasPendentes.map(r => (
+              <div key={r.id} className={styles.listItem}>
+                <div className={styles.listItemIcon} style={{ background: 'rgba(16,185,129,.10)', color: 'var(--g400)' }}>
+                  <i className="ti ti-clock" />
+                </div>
+                <div className={styles.listItemInfo}>
+                  <span className={styles.listItemName}>{r.desc}</span>
+                  <span className={styles.listItemSub}>{r.data}</span>
+                </div>
+                <div className={styles.listItemRight}>
+                  <span className={styles.listItemVal} style={{ color: 'var(--g400)' }}>{fmt(r.valor)}</span>
+                  <Button small variant="success" onClick={() => dispatch({ type: 'RECEBER_RECEITA', id: r.id })}>Receber</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message="Nenhuma receita pendente" icon="ti-calendar-check" compact />
+        )}
       </div>
 
       {/* ── Lançamentos recentes ──────────────── */}

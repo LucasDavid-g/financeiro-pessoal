@@ -11,6 +11,7 @@ import { exportToCSV, exportToPDF } from '../../utils/csv.js'
 import { contaLabel } from '../../utils/contaFilters.js'
 import { usePeriod } from '../../hooks/usePeriod.js'
 import { PagarModal } from '../ui/PagarModal.jsx'
+import { EditarLancamentoModal } from '../ui/EditarLancamentoModal.jsx'
 import styles from './Extrato.module.css'
 
 const SORT_OPTS = [
@@ -40,6 +41,7 @@ export function Extrato() {
   const [sort,          setSort]          = useState('data-desc')
   const [showRelatorio, setShowRelatorio] = useState(false)
   const [pagando,       setPagando]       = useState(null)
+  const [editando,      setEditando]      = useState(null)
 
   const filtered = useMemo(() => {
     let data = getLancsDoPeriodo(state.lancamentos, inicio, fim)
@@ -244,6 +246,9 @@ export function Extrato() {
                           Pagar
                         </button>
                       )}
+                      <button className={styles.delBtn} onClick={() => setEditando(l)} title="Editar">
+                        <i className="ti ti-pencil" />
+                      </button>
                       <button className={styles.delBtn} onClick={() => dispatch({ type: 'DEL_LANCAMENTO', id: l.id })}>
                         <i className="ti ti-trash" />
                       </button>
@@ -259,6 +264,12 @@ export function Extrato() {
       )}
 
       <PagarModal lancamento={pagando} onClose={() => setPagando(null)} />
+      {editando && (
+        <EditarLancamentoModal
+          lancamento={editando}
+          onClose={() => setEditando(null)}
+        />
+      )}
     </div>
   )
 }

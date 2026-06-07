@@ -9,7 +9,7 @@ export const getLancsDoPeriodo = (lancamentos, inicio, fim) =>
 
 export const getMetricasPeriodo = (state, inicio, fim) => {
   const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
-  const receitas = lancs.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
+  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
   const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
   const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
   const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
@@ -37,16 +37,32 @@ export const getFixosTotal = (fixos) =>
 export const getParcelasTotal = (parcelas) =>
   parcelas.reduce((sum, p) => sum + p.valor, 0)
 
+export const getReceitasFixasTotal = (receitasFixas = []) =>
+  receitasFixas.filter(r => r.ativo).reduce((s, r) => s + r.valor, 0)
+
 export const getMesData = (state, year, month) => {
   const lancs    = getLancsDoMes(state.lancamentos, year, month)
-  const receitas = lancs.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
+  // Receitas futuras (data > hoje) entram com status 'pendente' e não contam
+  // até serem efetivamente recebidas — análogo ao tratamento de despesas pendentes.
+  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
   // Apenas despesas PAGAS — pendentes não afetam orçamento nem burn rate
   const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
   const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
+  // Fixos/receitas fixas com `dia` cadastrado só entram no saldo do mês atual
+  // quando o dia já chegou — antes disso, contam apenas na projeção (getSaldoProjetado).
+  const hojeDia = new Date().getDate()
+  const fixosVencidos = state.fixos
+    .filter(f => f.ativo && (!f.dia || f.dia <= hojeDia))
+    .reduce((s, f) => s + f.valor, 0)
+  const recFixasVencidas = (state.receitasFixas || [])
+    .filter(r => r.ativo && (!r.dia || r.dia <= hojeDia))
+    .reduce((s, r) => s + r.valor, 0)
+
   const fixos    = getFixosTotal(state.fixos)
   const parcelas = getParcelasTotal(state.parcelas)
-  const totalSaidas = despesas + fixos + parcelas + invest
-  return { receitas, despesas, invest, fixos, parcelas, totalSaidas, saldo: receitas - totalSaidas }
+  const recFixas = getReceitasFixasTotal(state.receitasFixas)
+  const totalSaidas = despesas + fixosVencidos + parcelas + invest
+  return { receitas: receitas + recFixasVencidas, recFixas, despesas, invest, fixos, parcelas, totalSaidas, saldo: (receitas + recFixasVencidas) - totalSaidas }
 }
 
 export const getContaSaldo = (state, contaId) => {
@@ -54,7 +70,9 @@ export const getContaSaldo = (state, contaId) => {
   if (!conta) return 0
   let saldo = conta.saldo
   state.lancamentos.forEach((l) => {
-    if (l.contaId === contaId) {
+    // Lançamentos pendentes (receita futura ou despesa a pagar) ainda não
+    // impactam o saldo real da conta — só ao serem efetivados (RECEBER_RECEITA / PAGAR_COMPROMISSO)
+    if (l.contaId === contaId && l.status !== 'pendente') {
       saldo += l.tipo === 'receita' ? l.valor : -l.valor
     }
   })
@@ -68,7 +86,7 @@ export const getContaSaldo = (state, contaId) => {
 export const getContaMesStats = (state, contaId, year, month) => {
   const lancs = getLancsDoMes(state.lancamentos, year, month).filter((l) => l.contaId === contaId)
   return {
-    entrada: lancs.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0),
+    entrada: lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0),
     // Apenas despesas PAGAS — consistente com getMesData e getMetricasPeriodo
     saida:   lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0),
   }
@@ -169,12 +187,28 @@ export const getFaturaCartao = (state, contaId) => {
 // mesmo motivo. Fixos sem conta (null) ou em contas correntes/digitais são mantidos.
 export const getSaldoProjetado = (state) => {
   const cartaoIds = new Set(state.contas.filter(c => c.tipo === 'cartao').map(c => c.id))
-  const fixosOperacionais = state.fixos
+
+  // Despesas fixas ativas (todas, independente do dia — projeção do ciclo completo)
+  const fixosTotal = state.fixos
     .filter(f => f.ativo && !cartaoIds.has(f.contaId))
     .reduce((s, f) => s + f.valor, 0)
+
+  // Receitas fixas ativas (todas)
+  const recFixasTotal = (state.receitasFixas || [])
+    .filter(r => r.ativo)
+    .reduce((s, r) => s + r.valor, 0)
+
+  // Lançamentos avulsos pendentes (despesas futuras)
+  const pendentesDesp = getTotalPendente(state)
+
+  // Lançamentos avulsos pendentes (receitas futuras)
+  const pendentesRec = getTotalReceitasPendentes(state)
+
   return getSaldoDisponivel(state)
-    - getTotalPendente(state)
-    - fixosOperacionais
+    - fixosTotal
+    - pendentesDesp
+    + recFixasTotal
+    + pendentesRec
 }
 
 // Formata Date local como 'YYYY-MM-DD' sem conversão UTC.
@@ -306,4 +340,55 @@ export const getProximasSaidas = (state) => {
     })
 
   return saidas.sort((a, b) => a.data.localeCompare(b.data))
+}
+
+// Receitas futuras pendentes (data > hoje, status 'pendente', tipo 'receita').
+// Análogo ao getCompromissosPendentes, mas para o lado das entradas —
+// usado no card "Próximas receitas" do Dashboard.
+export const getReceitasPendentes = (state) => {
+  const hoje = toLocalISO(new Date())
+  return state.lancamentos
+    .filter(l => l.tipo === 'receita' && l.status === 'pendente')
+    .sort((a, b) => a.data.localeCompare(b.data))
+}
+
+export const getTotalReceitasPendentes = (state) =>
+  getReceitasPendentes(state).reduce((s, l) => s + l.valor, 0)
+
+// Unifica fixos com dia futuro, compromissos avulsos pendentes e receitas
+// avulsas pendentes em uma lista única ordenada por data — usada no card
+// "Próximos eventos" do Dashboard.
+export const getProximosVencimentos = (state) => {
+  const hoje = new Date().getDate()
+  const mesAtual = toLocalISO(new Date()).slice(0, 7)
+  const eventos = []
+
+  // Despesas fixas com dia futuro
+  state.fixos
+    .filter(f => f.ativo && f.dia && f.dia > hoje)
+    .forEach(f => {
+      const data = `${mesAtual}-${String(f.dia).padStart(2, '0')}`
+      eventos.push({ id: `fixo-${f.id}`, tipo: 'despesa_fixa', desc: f.desc, valor: f.valor, data, dia: f.dia })
+    })
+
+  // Receitas fixas com dia futuro
+  ;(state.receitasFixas || [])
+    .filter(r => r.ativo && r.dia && r.dia > hoje)
+    .forEach(r => {
+      const data = `${mesAtual}-${String(r.dia).padStart(2, '0')}`
+      eventos.push({ id: `recfixa-${r.id}`, tipo: 'receita_fixa', desc: r.desc, valor: r.valor, data, dia: r.dia })
+    })
+
+  // Compromissos avulsos pendentes (já existem em getCompromissosPendentes)
+  getCompromissosPendentes(state).forEach(l => {
+    eventos.push({ id: `lanc-${l.id}`, tipo: l.tipo === 'receita' ? 'receita_avulsa' : 'despesa_avulsa', desc: l.desc, valor: l.valor, data: l.data })
+  })
+
+  // Receitas avulsas pendentes
+  getReceitasPendentes(state).forEach(l => {
+    eventos.push({ id: `rec-${l.id}`, tipo: 'receita_avulsa', desc: l.desc, valor: l.valor, data: l.data })
+  })
+
+  // Ordenar por data
+  return eventos.sort((a, b) => a.data.localeCompare(b.data))
 }

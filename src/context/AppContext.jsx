@@ -1,23 +1,39 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react'
 import { saveUserData, loadUserData, onAuthChange, getCurrentUser } from '../services/firebase.js'
-import { getContaSaldo } from '../utils/calculators.js'
+import { getContaSaldo, toLocalISO } from '../utils/calculators.js'
+
+// Efetiva automaticamente lançamentos pendentes cuja data já chegou/passou —
+// cobre o cenário "a data chegou e o app não atualizou" sem exigir confirmação manual.
+function efetivarPendentesVencidos(lancamentos) {
+  const hoje = toLocalISO(new Date())
+  let mudou = false
+  const atualizados = (lancamentos || []).map(l => {
+    if (l.status === 'pendente' && l.data <= hoje) {
+      mudou = true
+      return { ...l, status: 'pago' }
+    }
+    return l
+  })
+  return { atualizados, mudou }
+}
 
 const AppContext = createContext(null)
 const STORAGE_KEY = 'mapa-do-bolso-state'
 
 const SYNC_ACTIONS = new Set([
-  'ADD_LANCAMENTO', 'DEL_LANCAMENTO',
+  'ADD_LANCAMENTO', 'EDIT_LANCAMENTO', 'DEL_LANCAMENTO',
   'ADD_CONTA', 'EDIT_CONTA', 'DEL_CONTA',
   'ADD_TRANSFER', 'DEL_TRANSFER',
   'ADD_FIXO', 'EDIT_FIXO', 'TOGGLE_FIXO', 'DEL_FIXO',
   'ADD_PARCELA', 'EDIT_PARCELA', 'DEL_PARCELA',
   'ADD_META', 'DEL_META', 'EDIT_META',
-  'PAGAR_COMPROMISSO',
+  'PAGAR_COMPROMISSO', 'RECEBER_RECEITA', 'AUTO_EFETIVAR_PENDENTES',
+  'ADD_RECEITA_FIXA', 'EDIT_RECEITA_FIXA', 'TOGGLE_RECEITA_FIXA', 'DEL_RECEITA_FIXA',
   'SET_ORCAMENTO',
 ])
 
 const EMPTY = {
-  lancamentos: [], fixos: [], parcelas: [], contas: [],
+  lancamentos: [], fixos: [], parcelas: [], contas: [], receitasFixas: [],
   transferencias: [], metas: [], reserva: 0,
   investType: 'CDI (cofrinho)', orcamento: null, nextId: 100,
   _loaded: false, _lastAction: null,
@@ -28,10 +44,26 @@ function reducer(state, action) {
     case 'LOAD':
       return { ...EMPTY, ...action.payload, _loaded: true, _lastAction: null }
 
+    // Disparado após o LOAD quando lançamentos pendentes venceram e foram efetivados
+    // automaticamente — apenas marca _lastAction para acionar o sync (estado já atualizado).
+    case 'AUTO_EFETIVAR_PENDENTES':
+      return { ...state, _lastAction: action.type }
+
     case 'ADD_LANCAMENTO': {
       const novo = { ...action.payload, id: state.nextId, mes: action.payload.data.slice(0, 7) }
       const reserva = novo.tipo === 'investimento' ? state.reserva + novo.valor : state.reserva
       return { ...state, lancamentos: [...state.lancamentos, novo], reserva, nextId: state.nextId + 1, _lastAction: action.type }
+    }
+    case 'EDIT_LANCAMENTO': {
+      return {
+        ...state,
+        lancamentos: state.lancamentos.map(l =>
+          l.id === action.payload.id
+            ? { ...l, ...action.payload, mes: action.payload.data.slice(0, 7) }
+            : l
+        ),
+        _lastAction: action.type,
+      }
     }
     case 'DEL_LANCAMENTO': {
       const l = state.lancamentos.find(x => x.id === action.id)
@@ -65,6 +97,15 @@ function reducer(state, action) {
       )
       return { ...state, lancamentos: updated, _lastAction: action.type }
     }
+    case 'RECEBER_RECEITA': {
+      // Marca receita futura pendente como recebida (paga) — espelha PAGAR_COMPROMISSO
+      const lanc = state.lancamentos.find(x => x.id === action.id)
+      if (!lanc || lanc.tipo !== 'receita' || lanc.status !== 'pendente') return state
+      const updated = state.lancamentos.map(l =>
+        l.id === action.id ? { ...l, status: 'pago', contaId: action.contaId || l.contaId } : l
+      )
+      return { ...state, lancamentos: updated, _lastAction: action.type }
+    }
         case 'ADD_TRANSFER':
       return { ...state, transferencias: [...state.transferencias, { ...action.payload, id: state.nextId, mes: action.payload.data.slice(0, 7) }], nextId: state.nextId + 1, _lastAction: action.type }
     case 'DEL_TRANSFER':
@@ -89,6 +130,14 @@ function reducer(state, action) {
       return { ...state, metas: state.metas.map(m => m.id === action.payload.id ? { ...m, ...action.payload } : m), _lastAction: action.type }
     case 'DEL_META':
       return { ...state, metas: state.metas.filter(m => m.id !== action.id), _lastAction: action.type }
+    case 'ADD_RECEITA_FIXA':
+      return { ...state, receitasFixas: [...(state.receitasFixas || []), { ...action.payload, id: state.nextId, ativo: true }], nextId: state.nextId + 1, _lastAction: action.type }
+    case 'EDIT_RECEITA_FIXA':
+      return { ...state, receitasFixas: (state.receitasFixas || []).map(r => r.id === action.payload.id ? { ...r, ...action.payload } : r), _lastAction: action.type }
+    case 'TOGGLE_RECEITA_FIXA':
+      return { ...state, receitasFixas: (state.receitasFixas || []).map(r => r.id === action.id ? { ...r, ativo: !r.ativo } : r), _lastAction: action.type }
+    case 'DEL_RECEITA_FIXA':
+      return { ...state, receitasFixas: (state.receitasFixas || []).filter(r => r.id !== action.id), _lastAction: action.type }
     case 'SET_ORCAMENTO':
       return { ...state, orcamento: action.valor, _lastAction: action.type }
     default:
@@ -126,7 +175,11 @@ export function AppProvider({ children }) {
               ...(data.metas        || []).map(m => m.id || 0),
             ]
             const nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 100
-            dispatch({ type: 'LOAD', payload: { ...data, nextId } })
+            const { atualizados, mudou } = efetivarPendentesVencidos(data.lancamentos)
+            dispatch({ type: 'LOAD', payload: { ...data, lancamentos: atualizados, nextId } })
+            // Se algum pendente venceu, marca a última ação como sincronizável
+            // para persistir a efetivação automática no Firebase/localStorage.
+            if (mudou) setTimeout(() => dispatch({ type: 'AUTO_EFETIVAR_PENDENTES' }), 0)
             return
           }
         } catch (e) {
@@ -136,8 +189,14 @@ export function AppProvider({ children }) {
       // Fallback: localStorage (não logado, ou Firebase não tem dados ainda)
       try {
         const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved) dispatch({ type: 'LOAD', payload: JSON.parse(saved) })
-        else dispatch({ type: 'LOAD', payload: {} })
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          const { atualizados, mudou } = efetivarPendentesVencidos(parsed.lancamentos)
+          dispatch({ type: 'LOAD', payload: { ...parsed, lancamentos: atualizados } })
+          if (mudou) setTimeout(() => dispatch({ type: 'AUTO_EFETIVAR_PENDENTES' }), 0)
+        } else {
+          dispatch({ type: 'LOAD', payload: {} })
+        }
       } catch {
         dispatch({ type: 'LOAD', payload: {} })
       }
@@ -166,6 +225,7 @@ export function AppProvider({ children }) {
             fixos: s.fixos,
             parcelas: s.parcelas,
             contas: s.contas,
+            receitasFixas: s.receitasFixas,
             transferencias: s.transferencias,
             metas: s.metas,
             reserva: s.reserva,

@@ -76,6 +76,7 @@
     min-width: unset;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     animation: slideUp 0.2s ease both;
+    z-index: 500;
   }
 }
 
