@@ -118,6 +118,15 @@ export function Dashboard() {
   const fixosTotal    = getFixosTotal(state.fixos)
   const parcelasTotal = getParcelasTotal(state.parcelas)
 
+  // Despesas avulsas lançadas em contas do tipo cartão (subconjunto de `despesas`)
+  const gastosCartao = useMemo(() =>
+    state.lancamentos
+      .filter(l => l.tipo === 'despesa' && l.status !== 'pendente')
+      .filter(l => state.contas.find(c => c.id === l.contaId)?.tipo === 'cartao')
+      .reduce((s, l) => s + l.valor, 0),
+    [state.lancamentos, state.contas]
+  )
+
   const patrimonioTotal = useMemo(
     () => state.contas.reduce((s, c) => s + (saldosPorConta[c.id] ?? 0), 0),
     [state.contas, saldosPorConta]
@@ -403,7 +412,11 @@ export function Dashboard() {
           value={fmt(despesas)}
           icon="ti-arrow-up-right"
           gradient="linear-gradient(135deg,rgba(244,63,94,.15),rgba(244,63,94,.05))"
-          sub="apenas pagas"
+          sub={[
+            gastosCartao > 0 && `${fmt(gastosCartao)} cartões`,
+            parcelasTotal > 0 && `${fmt(parcelasTotal)} parcelas`,
+            fixosTotal > 0    && `${fmt(fixosTotal)} fixos`,
+          ].filter(Boolean).join(' · ') || 'apenas pagas'}
           delta={deltaDespesas == null ? null : -deltaDespesas}
           deltaLabel={mesAnteriorAbrev}
         />

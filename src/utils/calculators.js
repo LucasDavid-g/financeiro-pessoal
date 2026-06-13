@@ -181,17 +181,17 @@ export const getFaturaCartao = (state, contaId) => {
   return faturaLancs + parcelasCartao + fixosCartao
 }
 
-// Saldo projetado = disponível - pendentes - fixos operacionais ativos
-// IC-02: parcelas excluídas — todas vinculadas a cartão, vão via fatura (não debitam saldo
-// operacional diretamente). Fixos cujo contaId aponta para um cartão também excluídos pelo
-// mesmo motivo. Fixos sem conta (null) ou em contas correntes/digitais são mantidos.
+// Saldo projetado = disponível - todas as despesas fixas - parcelas - pendentes + receitas fixas + receitas pendentes
+// Fixos vinculados a cartão são despesas reais do próximo ciclo (saem pelo pagamento da fatura) e
+// devem entrar na projeção. Parcelas mensais também, pelo mesmo motivo.
 export const getSaldoProjetado = (state) => {
-  const cartaoIds = new Set(state.contas.filter(c => c.tipo === 'cartao').map(c => c.id))
-
-  // Despesas fixas ativas (todas, independente do dia — projeção do ciclo completo)
+  // Todas as despesas fixas ativas, incluindo as vinculadas a cartão
   const fixosTotal = state.fixos
-    .filter(f => f.ativo && !cartaoIds.has(f.contaId))
+    .filter(f => f.ativo)
     .reduce((s, f) => s + f.valor, 0)
+
+  // Parcelas mensais (assinaturas e parcelamentos em cartão)
+  const parcelasTotal = getParcelasTotal(state.parcelas)
 
   // Receitas fixas ativas (todas)
   const recFixasTotal = (state.receitasFixas || [])
@@ -206,6 +206,7 @@ export const getSaldoProjetado = (state) => {
 
   return getSaldoDisponivel(state)
     - fixosTotal
+    - parcelasTotal
     - pendentesDesp
     + recFixasTotal
     + pendentesRec
