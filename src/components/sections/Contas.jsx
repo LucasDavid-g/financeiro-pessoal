@@ -21,7 +21,7 @@ const TIPO_ICONS = {
   poupanca:     'ti-piggy-bank',
 }
 
-const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0], limite: '', vencimento: '', fechamento: '' }
+const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0], limite: '', vencimento: '', fechamento: '', faturaAberta: '' }
 const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: toLocalISO(new Date()) }
 
 export function Contas() {
@@ -98,8 +98,35 @@ export function Contas() {
       }),
     }
     setContaErr('')
-    if (contaForm.editId) dispatch({ type: 'EDIT_CONTA', payload: { ...payload, id: contaForm.editId } })
-    else dispatch({ type: 'ADD_CONTA', payload })
+    if (contaForm.editId) {
+      dispatch({ type: 'EDIT_CONTA', payload: { ...payload, id: contaForm.editId } })
+    } else {
+      const novoContaId = state.nextId
+      dispatch({ type: 'ADD_CONTA', payload })
+
+      // Cria lançamento de fatura em aberto se informado (apenas em criação, não edição)
+      const faturaAberta = parseFloat(contaForm.faturaAberta) || 0
+      if (isCartao && faturaAberta > 0) {
+        const vencimentoDia = parseInt(contaForm.vencimento) || 10
+        const hoje = new Date()
+        const mesVenc = hoje.getDate() >= vencimentoDia
+          ? new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1)
+          : new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+        const dataVenc = toLocalISO(new Date(mesVenc.getFullYear(), mesVenc.getMonth(), vencimentoDia))
+        dispatch({
+          type: 'ADD_LANCAMENTO',
+          payload: {
+            desc:     `Fatura em aberto · ${contaForm.nome}`,
+            tipo:     'despesa',
+            valor:    faturaAberta,
+            data:     dataVenc,
+            cat:      'cartão',
+            contaId:  novoContaId,
+            status:   'pendente',
+          },
+        })
+      }
+    }
     setContaModal(false)
     setContaForm({ ...EMPTY_CONTA, editId: null })
   }
@@ -450,6 +477,19 @@ export function Contas() {
                 />
               </FormGroup>
             </FormRow>
+            {!contaForm.editId && (
+              <FormGroup label="Fatura em aberto (opcional)">
+                <input
+                  type="number" step="0.01" min="0"
+                  placeholder="0,00"
+                  value={contaForm.faturaAberta}
+                  onChange={e => setC('faturaAberta', e.target.value)}
+                />
+                <p style={{ fontSize: 11, color: 'var(--color-text3)', margin: '4px 0 0' }}>
+                  Se informado, será registrada como despesa pendente com vencimento no próximo dia de pagamento.
+                </p>
+              </FormGroup>
+            )}
           </>
         )}
 
