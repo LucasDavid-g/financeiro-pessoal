@@ -67,7 +67,7 @@ export function Login({ onLogin }) {
         {/* Consentimento LGPD */}
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
-          margin: '0 0 20px', textAlign: 'left',
+          margin: '0 0 20px', textAlign: 'left', width: '100%',
         }}>
           <input
             type="checkbox"
