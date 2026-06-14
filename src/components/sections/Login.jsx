@@ -1,4 +1,8 @@
+import { useState } from 'react'
+
 export function Login({ onLogin }) {
+  const [consentido, setConsentido] = useState(false)
+
   return (
     <div style={{
       minHeight: '100dvh',
@@ -54,14 +58,45 @@ export function Login({ onLogin }) {
         </h1>
         <p style={{
           fontSize: 13, color: 'var(--color-text3)',
-          marginBottom: '2.5rem',
+          marginBottom: '1.5rem',
           lineHeight: 1.6,
         }}>
           Seu controle financeiro pessoal,<br />simples e eficiente.
         </p>
 
+        {/* Consentimento LGPD */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          margin: '0 0 20px', textAlign: 'left',
+        }}>
+          <input
+            type="checkbox"
+            id="lgpd"
+            checked={consentido}
+            onChange={e => setConsentido(e.target.checked)}
+            style={{ marginTop: 2, accentColor: 'var(--g400)', cursor: 'pointer', flexShrink: 0 }}
+          />
+          <label htmlFor="lgpd" style={{
+            fontSize: 13, color: 'var(--color-text2)',
+            lineHeight: 1.5, cursor: 'pointer',
+          }}>
+            Concordo com a{' '}
+            <a
+              href="/privacidade.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--g400)', textDecoration: 'underline' }}
+              onClick={e => e.stopPropagation()}
+            >
+              Política de Privacidade
+            </a>
+            . Meus dados serão usados exclusivamente para o funcionamento do app e não serão compartilhados com terceiros.
+          </label>
+        </div>
+
         <button
-          onClick={onLogin}
+          onClick={consentido ? onLogin : undefined}
+          disabled={!consentido}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             width: '100%',
@@ -69,14 +104,15 @@ export function Login({ onLogin }) {
             border: '1px solid var(--color-border)',
             borderRadius: 14,
             padding: '13px 24px',
-            cursor: 'pointer',
+            cursor: consentido ? 'pointer' : 'not-allowed',
             fontSize: 14, fontFamily: 'var(--font-sans)', fontWeight: 600,
             color: 'var(--color-text)',
             boxShadow: 'var(--shadow-md)',
             transition: 'var(--transition)',
             marginBottom: '1rem',
+            opacity: consentido ? 1 : 0.4,
           }}
-          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)' }}
+          onMouseOver={e => { if (consentido) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)' } }}
           onMouseOut={e  => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
         >
           <svg width="18" height="18" viewBox="0 0 48 48">
