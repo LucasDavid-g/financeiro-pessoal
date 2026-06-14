@@ -30,14 +30,14 @@ function KpiChip({ label, value, color, bg }) {
   )
 }
 
-export function Extrato() {
+export function Extrato({ filtrosIniciais = {} }) {
   const { state, dispatch } = useApp()
   const { period, setPreset, setRange } = usePeriod()
   const { inicio, fim } = period
 
   const [busca,         setBusca]         = useState('')
   const [tipo,          setTipo]          = useState('')
-  const [contaId,       setContaId]       = useState('')
+  const [contaId,       setContaId]       = useState(filtrosIniciais.contaId ? String(filtrosIniciais.contaId) : '')
   const [sort,          setSort]          = useState('data-desc')
   const [showRelatorio, setShowRelatorio] = useState(false)
   const [pagando,       setPagando]       = useState(null)

@@ -24,7 +24,7 @@ const TIPO_ICONS = {
 const EMPTY_CONTA = { nome: '', tipo: 'corrente', saldo: '', cor: ACCOUNT_COLORS[0], limite: '', vencimento: '', fechamento: '', faturaAberta: '' }
 const EMPTY_TR    = { desc: '', origemId: '', destinoId: '', valor: '', data: toLocalISO(new Date()) }
 
-export function Contas() {
+export function Contas({ onNavigate = () => {} }) {
   const { state, dispatch } = useApp()
   const { period: trPeriod, setPreset: setTrPreset, setRange: setTrRange } = usePeriod()
   const [contaModal, setContaModal] = useState(false)
@@ -257,16 +257,21 @@ export function Contas() {
             const pct = !isCard && patrimonio > 0 ? Math.round((Math.max(0, saldo) / Math.max(1, patrimonio)) * 100) : 0
 
             return (
-              <div key={c.id} className={styles.contaCard}>
+              <div
+                key={c.id}
+                className={styles.contaCard}
+                style={{ cursor: 'pointer' }}
+                onClick={() => onNavigate('extrato', { contaId: c.id })}
+              >
                 <div className={styles.contaAccent} style={{ background: c.cor }} />
 
                 <div className={styles.contaTop}>
                   <BankLogo nome={c.nome} cor={c.cor} size={38} />
                   <div className={styles.contaActions}>
-                    <button className={styles.actionBtn} onClick={() => editConta(c)} title="Editar">
+                    <button className={styles.actionBtn} onClick={e => { e.stopPropagation(); editConta(c) }} title="Editar">
                       <i className="ti ti-pencil" />
                     </button>
-                    <button className={styles.actionBtn} onClick={() => deleteConta(c)} title="Excluir">
+                    <button className={styles.actionBtn} onClick={e => { e.stopPropagation(); deleteConta(c) }} title="Excluir">
                       <i className="ti ti-trash" />
                     </button>
                   </div>
@@ -386,6 +391,14 @@ export function Contas() {
                     </div>
                   </>
                 )}
+
+                <div style={{
+                  position: 'absolute', bottom: 10, right: 12,
+                  color: 'var(--color-text3)', fontSize: 14, opacity: 0.5,
+                  pointerEvents: 'none',
+                }}>
+                  <i className="ti ti-chevron-right" />
+                </div>
               </div>
             )
           })}

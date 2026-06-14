@@ -15,9 +15,22 @@ import { useAuth }     from './hooks/useAuth.js'
 import './styles/globals.css'
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab,      setActiveTab]      = useState('dashboard')
+  const [filtrosExtrato, setFiltrosExtrato] = useState({})
   const { theme, toggle }         = useTheme()
   const { status, user, login, logout } = useAuth()
+
+  // Navegação programática com filtros opcionais (usado por Contas → Extrato)
+  const onNavigate = (aba, filtros = {}) => {
+    setFiltrosExtrato(filtros)
+    setActiveTab(aba)
+  }
+
+  // Navegação via sidebar/MobileNav — limpa filtros do extrato
+  const navTo = (aba) => {
+    setFiltrosExtrato({})
+    setActiveTab(aba)
+  }
 
   if (status === 'loading') {
     return (
@@ -47,9 +60,9 @@ function AppContent() {
 
   const sections = {
     dashboard:   <Dashboard />,
-    contas:      <Contas />,
+    contas:      <Contas onNavigate={onNavigate} />,
     lancamentos: <Lancamentos />,
-    extrato:     <Extrato />,
+    extrato:     <Extrato key={filtrosExtrato.contaId ?? 'all'} filtrosIniciais={filtrosExtrato} />,
     fixos:       <Fixos />,
     metas:       <Metas />,
   }
@@ -58,7 +71,7 @@ function AppContent() {
     <div className="app-shell">
       <Sidebar
         active={activeTab}
-        onChange={setActiveTab}
+        onChange={navTo}
         user={user}
         onLogout={logout}
         theme={theme}
@@ -78,7 +91,7 @@ function AppContent() {
           {sections[activeTab]}
         </main>
 
-        <MobileNav active={activeTab} onChange={setActiveTab} />
+        <MobileNav active={activeTab} onChange={navTo} />
       </div>
     </div>
   )
