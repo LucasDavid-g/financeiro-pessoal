@@ -11,7 +11,7 @@ export function Login({ onLogin }) {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'var(--color-bg)',
-      padding: '2rem',
+      padding: '2rem 1rem',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -33,7 +33,15 @@ export function Login({ onLogin }) {
         pointerEvents: 'none',
       }} />
 
-      <div style={{ position: 'relative', textAlign: 'center', maxWidth: 320 }}>
+      {/* Card central */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 360,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
         {/* Logo */}
         <div style={{
           width: 64, height: 64,
@@ -41,7 +49,7 @@ export function Login({ onLogin }) {
           background: 'linear-gradient(135deg, #10B981, #059669)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 30, color: 'white',
-          margin: '0 auto 1.5rem',
+          marginBottom: '1.5rem',
           boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
         }}>
           <i className="ti ti-map" />
@@ -53,6 +61,7 @@ export function Login({ onLogin }) {
           color: 'var(--color-text)',
           marginBottom: 8,
           fontFamily: 'var(--font-sans)',
+          textAlign: 'center',
         }}>
           Mapa do Bolso
         </h1>
@@ -60,25 +69,40 @@ export function Login({ onLogin }) {
           fontSize: 13, color: 'var(--color-text3)',
           marginBottom: '1.5rem',
           lineHeight: 1.6,
+          textAlign: 'center',
         }}>
           Seu controle financeiro pessoal,<br />simples e eficiente.
         </p>
 
         {/* Consentimento LGPD */}
         <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10,
-          margin: '0 0 20px', textAlign: 'left', width: '100%',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          margin: '0 0 20px',
+          width: '100%',
+          padding: '0 8px',
+          boxSizing: 'border-box',
         }}>
           <input
             type="checkbox"
             id="lgpd"
             checked={consentido}
             onChange={e => setConsentido(e.target.checked)}
-            style={{ marginTop: 2, accentColor: 'var(--g400)', cursor: 'pointer', flexShrink: 0 }}
+            style={{
+              marginTop: 3,
+              accentColor: 'var(--g400)',
+              cursor: 'pointer',
+              flexShrink: 0,
+              width: 16,
+              height: 16,
+            }}
           />
           <label htmlFor="lgpd" style={{
-            fontSize: 13, color: 'var(--color-text2)',
-            lineHeight: 1.5, cursor: 'pointer',
+            fontSize: 12,
+            color: 'var(--color-text2)',
+            lineHeight: 1.6,
+            cursor: 'pointer',
           }}>
             Concordo com a{' '}
             <a
@@ -124,7 +148,7 @@ export function Login({ onLogin }) {
           Entrar com Google
         </button>
 
-        <p style={{ fontSize: 11, color: 'var(--color-text3)', lineHeight: 1.6 }}>
+        <p style={{ fontSize: 11, color: 'var(--color-text3)', lineHeight: 1.6, textAlign: 'center' }}>
           Seus dados ficam salvos com segurança<br />no Firebase, vinculados à sua conta Google.
         </p>
       </div>
