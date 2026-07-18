@@ -59,8 +59,26 @@ export const getMesesNoPeriodo = (inicio, fim) => {
 export const getFixosTotal = (fixos) =>
   fixos.filter((f) => f.ativo).reduce((sum, f) => sum + f.valor, 0)
 
+// LN-2: número da parcela corrente, derivado dos meses decorridos desde o cadastro
+// somados ao `atual` informado na criação. Sem criadoEm (legado), usa `atual` estático.
+export const parcelaAtualNoMes = (p, ref = new Date()) => {
+  if (!p.criadoEm) return p.atual || 1
+  const [cy, cm] = p.criadoEm.split('-').map(Number)
+  const mesesDecorridos = (ref.getFullYear() - cy) * 12 + (ref.getMonth() - (cm - 1))
+  return (p.atual || 1) + Math.max(0, mesesDecorridos)
+}
+
+// LN-2: uma parcela finita encerra quando a parcela corrente ultrapassa o total.
+// total >= 999 = recorrente (sem fim). Legado sem criadoEm nunca encerra sozinho
+// (fallback: preserva o comportamento anterior para dados existentes).
+export const parcelaEncerrada = (p, ref = new Date()) => {
+  if (!p.total || p.total >= 999) return false
+  if (!p.criadoEm) return false
+  return parcelaAtualNoMes(p, ref) > p.total
+}
+
 export const getParcelasTotal = (parcelas) =>
-  parcelas.reduce((sum, p) => sum + p.valor, 0)
+  parcelas.filter(p => !parcelaEncerrada(p)).reduce((sum, p) => sum + p.valor, 0)
 
 export const getReceitasFixasTotal = (receitasFixas = []) =>
   receitasFixas.filter(r => r.ativo).reduce((s, r) => s + r.valor, 0)
@@ -198,7 +216,8 @@ export const getFaturaCartao = (state, contaId) => {
   const faturaLancs   = Math.max(0, -getContaSaldo(state, contaId))
   const parcelasCartao = state.parcelas
     // aceita cartaoId (numérico, schema novo) OU cartao (string, schema atual)
-    .filter(p => p.cartaoId === contaId || p.cartao === conta?.nome)
+    // LN-2: exclui parcelas já encerradas (parcela corrente > total)
+    .filter(p => (p.cartaoId === contaId || p.cartao === conta?.nome) && !parcelaEncerrada(p))
     .reduce((s, p) => s + p.valor, 0)
   const fixosCartao   = state.fixos
     .filter(f => f.ativo && f.contaId === contaId)
@@ -275,8 +294,9 @@ export const getCicloCartao = (state, contaId) => {
   const preExistente = Math.max(0, -(getContaSaldo(state, contaId) + faturaLancs))
 
   // Parcelas mensais (schema duplo para retrocompatibilidade)
+  // LN-2: exclui parcelas já encerradas (parcela corrente > total)
   const mensaisParcelas = state.parcelas
-    .filter(p => p.cartaoId === contaId || p.cartao === conta.nome)
+    .filter(p => (p.cartaoId === contaId || p.cartao === conta.nome) && !parcelaEncerrada(p))
     .reduce((s, p) => s + p.valor, 0)
 
   // Fixos mensais vinculados ao cartão

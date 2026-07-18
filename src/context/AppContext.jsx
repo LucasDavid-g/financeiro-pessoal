@@ -120,7 +120,8 @@ function reducer(state, action) {
     case 'DEL_FIXO':
       return { ...state, fixos: state.fixos.filter(f => f.id !== action.id), _lastAction: action.type }
     case 'ADD_PARCELA':
-      return { ...state, parcelas: [...state.parcelas, { ...action.payload, id: state.nextId }], nextId: state.nextId + 1, _lastAction: action.type }
+      // criadoEm (LN-2): âncora para derivar a parcela corrente e encerrar automaticamente
+      return { ...state, parcelas: [...state.parcelas, { ...action.payload, id: state.nextId, criadoEm: toLocalISO(new Date()) }], nextId: state.nextId + 1, _lastAction: action.type }
     case 'EDIT_PARCELA':
       return { ...state, parcelas: state.parcelas.map(p => p.id === action.payload.id ? { ...p, ...action.payload } : p), _lastAction: action.type }
     case 'DEL_PARCELA':

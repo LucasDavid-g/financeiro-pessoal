@@ -10,7 +10,7 @@ import { EmptyState } from '../ui/EmptyState.jsx'
 import { CAT_CONFIG, CATEGORIES, RECEITA_CATEGORIES } from '../../data/defaults.js'
 import { contaOptions, contaLabel } from '../../utils/contaFilters.js'
 import { fmt } from '../../utils/formatters.js'
-import { getFixosTotal, getParcelasTotal, getReceitasFixasTotal } from '../../utils/calculators.js'
+import { getFixosTotal, getParcelasTotal, getReceitasFixasTotal, parcelaAtualNoMes, parcelaEncerrada } from '../../utils/calculators.js'
 import styles from './Fixos.module.css'
 
 const EMPTY_FIXO    = { desc: '', valor: '', cat: 'moradia', contaId: '', dia: '' }
@@ -209,11 +209,14 @@ export function Fixos() {
         )}
         {state.parcelas.length > 0 ? state.parcelas.map(p => {
           const inf = p.total === 999
-          const pct = inf ? 100 : Math.round(p.atual / p.total * 100)
+          // LN-2: parcela corrente derivada dos meses decorridos (limitada ao total)
+          const atualVivo = inf ? p.atual : Math.min(parcelaAtualNoMes(p), p.total)
+          const encerrada = parcelaEncerrada(p)
+          const pct = inf ? 100 : Math.round(atualVivo / p.total * 100)
           const cartaoConta = state.contas.find(c => c.id === p.cartaoId)
           const cartaoLabel = cartaoConta ? contaLabel(cartaoConta) : p.cartao || '—'
           return (
-            <div key={p.id} className={styles.parcelaWrap}>
+            <div key={p.id} className={styles.parcelaWrap} style={{ opacity: encerrada ? 0.5 : 1 }}>
               <div className={styles.parcelaRow}>
                 {/* Ícone */}
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--r50)', color: 'var(--r400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
@@ -222,18 +225,21 @@ export function Fixos() {
 
                 {/* Linha 1: descrição + subtítulo */}
                 <div className={styles.parcelaContent}>
-                  <div className={styles.parcelaDesc}>{p.desc}</div>
-                  <div className={styles.parcelaSub}>{cartaoLabel} · {inf ? 'recorrente' : `${p.atual}/${p.total}`}</div>
+                  <div className={styles.parcelaDesc}>
+                    {p.desc}
+                    {encerrada && <Badge variant="a" style={{ marginLeft: 6 }}>encerrada</Badge>}
+                  </div>
+                  <div className={styles.parcelaSub}>{cartaoLabel} · {inf ? 'recorrente' : `${atualVivo}/${p.total}`}</div>
                 </div>
 
                 {/* Linha 2 (mobile) / direita (desktop): valor + ações */}
                 <div className={styles.parcelaRight}>
-                  <span className={styles.parcelaVal}>{fmt(p.valor)}</span>
+                  <span className={styles.parcelaVal} style={encerrada ? { textDecoration: 'line-through', color: 'var(--color-text3)' } : {}}>{fmt(p.valor)}</span>
                   {iconBtn(() => editParcela(p), 'ti-pencil')}
                   {iconBtn(() => dispatch({ type: 'DEL_PARCELA', id: p.id }), 'ti-trash')}
                 </div>
               </div>
-              {!inf && <ProgressBar pct={pct} color="var(--r400)" />}
+              {!inf && <ProgressBar pct={pct} color={encerrada ? 'var(--g400)' : 'var(--r400)'} />}
             </div>
           )
         }) : <EmptyState message="Nenhuma parcela cadastrada" />}
