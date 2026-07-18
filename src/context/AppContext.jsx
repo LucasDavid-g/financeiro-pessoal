@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react'
 import { saveUserData, loadUserData, onAuthChange, getCurrentUser } from '../services/firebase.js'
-import { getContaSaldo, toLocalISO } from '../utils/calculators.js'
+import { getContaSaldo, toLocalISO, buildPagamentoTransfer } from '../utils/calculators.js'
 
 // Efetiva automaticamente lançamentos pendentes cuja data já chegou/passou —
 // cobre o cenário "a data chegou e o app não atualizou" sem exigir confirmação manual.
@@ -110,9 +110,24 @@ function reducer(state, action) {
       return { ...state, contas: state.contas.filter(c => c.id !== id), lancamentos: novasLancs, transferencias: novasTransfers, fixos: novosFixos, metas: novasMetas, reserva: Math.max(0, state.reserva - investsRemovidos), _lastAction: action.type }
     }
     case 'PAGAR_COMPROMISSO': {
-      // Marca despesa pendente como paga e desconta do saldo
       const lanc = state.lancamentos.find(x => x.id === action.id)
       if (!lanc || lanc.status !== 'pendente') return state
+      // LN-6: se a despesa é de um cartão, o pagamento vira transferência conta→cartão —
+      // mantém a despesa no histórico do cartão e credita o cartão (abate a fatura).
+      const transfer = buildPagamentoTransfer(state, lanc, action.contaId, state.nextId)
+      if (transfer) {
+        const updated = state.lancamentos.map(l =>
+          l.id === action.id ? { ...l, status: 'pago' } : l   // mantém contaId no cartão
+        )
+        return {
+          ...state,
+          lancamentos: updated,
+          transferencias: [...state.transferencias, transfer],
+          nextId: state.nextId + 1,
+          _lastAction: action.type,
+        }
+      }
+      // Despesa comum: marca paga e atribui à conta escolhida (comportamento anterior)
       const updated = state.lancamentos.map(l =>
         l.id === action.id ? { ...l, status: 'pago', contaId: action.contaId || l.contaId } : l
       )

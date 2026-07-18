@@ -185,6 +185,26 @@ export const getContaSaldo = (state, contaId) => {
   return saldo
 }
 
+// LN-6: ao pagar uma despesa pendente que pertence a um CARTÃO, o pagamento vira uma
+// transferência conta-operacional → cartão. Isso mantém a despesa no histórico do cartão
+// (marcada como paga) e credita o cartão (abate a fatura), enquanto debita a conta que pagou.
+// Retorna a transferência a ser criada, ou null quando é despesa comum (pagamento direto).
+export const buildPagamentoTransfer = (state, lanc, contaPagamentoId, nextId) => {
+  const contaDespesa = state.contas.find(c => c.id === lanc.contaId)
+  if (contaDespesa?.tipo !== 'cartao' || !contaPagamentoId) return null
+  const hoje = toLocalISO(new Date())
+  return {
+    id: nextId,
+    desc: `Pagamento fatura · ${contaDespesa.nome}`,
+    origemId:  contaPagamentoId,
+    destinoId: lanc.contaId,
+    valor: lanc.valor,
+    data: hoje,
+    mes: hoje.slice(0, 7),
+    auto: true,   // marca origem automática (pagamento de fatura) para a UI diferenciar
+  }
+}
+
 export const getContaMesStats = (state, contaId, year, month) => {
   const lancs = getLancsDoMes(state.lancamentos, year, month).filter((l) => l.contaId === contaId)
   return {
