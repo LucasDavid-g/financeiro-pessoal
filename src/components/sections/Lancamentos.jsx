@@ -2,20 +2,9 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { CATEGORIES, CAT_CONFIG } from '../../data/defaults.js'
 import { contaOptions } from '../../utils/contaFilters.js'
+import { TIPOS, localToday, contextoConta, deriveStatus } from '../../utils/lancamento.js'
 import { Button } from '../ui/Button.jsx'
 import styles from './Lancamentos.module.css'
-
-const TIPOS = [
-  { id: 'despesa',      label: 'Despesa',      icon: 'ti-arrow-up-right',   color: '#F43F5E', bg: 'rgba(244,63,94,.08)'   },
-  { id: 'receita',      label: 'Receita',      icon: 'ti-arrow-down-left',  color: '#10B981', bg: 'rgba(16,185,129,.08)'  },
-  { id: 'investimento', label: 'Investimento', icon: 'ti-trending-up',      color: '#3B82F6', bg: 'rgba(59,130,246,.08)'  },
-]
-
-// Formata data local como YYYY-MM-DD sem conversão UTC (evita deslocamento UTC-3)
-const localToday = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-}
 
 export function Lancamentos() {
   const { state, dispatch } = useApp()
@@ -28,10 +17,10 @@ export function Lancamentos() {
   const [errMsg, setErrMsg] = useState('')
   const [okMsg,  setOkMsg]  = useState(false)
 
-  const contexto    = form.tipo === 'investimento' ? 'investimento' : form.tipo === 'receita' ? 'receita' : 'despesa'
+  const contexto    = contextoConta(form.tipo)
   const opcoes      = contaOptions(state.contas, contexto)
   const tipoAtivo   = TIPOS.find(t => t.id === form.tipo)
-  const isPendente  = form.data > localToday() && form.tipo !== 'investimento'
+  const isPendente  = deriveStatus(form.tipo, form.data) === 'pendente'
 
   const handleTipoChange = (novoTipo) => {
     setForm(f => ({ ...f, tipo: novoTipo, contaId: '' }))
@@ -47,7 +36,7 @@ export function Lancamentos() {
       ...form,
       valor:   parseFloat(form.valor),
       contaId: form.contaId ? parseInt(form.contaId) : null,
-      status: form.tipo === 'investimento' ? 'pago' : (form.data > localToday() ? 'pendente' : 'pago'),
+      status: deriveStatus(form.tipo, form.data),
     }
     dispatch({ type: 'ADD_LANCAMENTO', payload })
     setForm(f => ({ ...f, desc: '', valor: '', data: localToday() }))

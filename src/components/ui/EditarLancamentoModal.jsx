@@ -3,19 +3,9 @@ import { Modal } from './Modal.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import { CATEGORIES, CAT_CONFIG } from '../../data/defaults.js'
 import { contaOptions } from '../../utils/contaFilters.js'
+import { TIPOS, contextoConta, deriveStatus } from '../../utils/lancamento.js'
 import { Button } from './Button.jsx'
 import styles from '../sections/Lancamentos.module.css'
-
-const TIPOS = [
-  { id: 'despesa',      label: 'Despesa',      icon: 'ti-arrow-up-right',   color: '#F43F5E', bg: 'rgba(244,63,94,.08)'   },
-  { id: 'receita',      label: 'Receita',      icon: 'ti-arrow-down-left',  color: '#10B981', bg: 'rgba(16,185,129,.08)'  },
-  { id: 'investimento', label: 'Investimento', icon: 'ti-trending-up',      color: '#3B82F6', bg: 'rgba(59,130,246,.08)'  },
-]
-
-const localToday = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-}
 
 // lancamento: objeto completo do lançamento a editar
 // onClose: fecha o modal
@@ -43,7 +33,7 @@ export function EditarLancamentoModal({ lancamento, onClose }) {
   if (!lancamento || !form) return null
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const contexto  = form.tipo === 'investimento' ? 'investimento' : form.tipo === 'receita' ? 'receita' : 'despesa'
+  const contexto  = contextoConta(form.tipo)
   const opcoes    = contaOptions(state.contas, contexto)
   const tipoAtivo = TIPOS.find(t => t.id === form.tipo)
 
@@ -60,9 +50,9 @@ export function EditarLancamentoModal({ lancamento, onClose }) {
         id: lancamento.id,
         valor: parseFloat(form.valor),
         contaId: form.contaId ? parseInt(form.contaId) : null,
-        // Status sempre derivado da data — regra universal do projeto.
+        // Status sempre derivado da data — regra universal do projeto (deriveStatus).
         // Não é exposto como campo editável: muda automaticamente conforme a data.
-        status: form.tipo === 'investimento' ? 'pago' : (form.data > localToday() ? 'pendente' : 'pago'),
+        status: deriveStatus(form.tipo, form.data),
         mes: form.data.slice(0, 7),
       },
     })
