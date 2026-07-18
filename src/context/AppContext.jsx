@@ -111,7 +111,8 @@ function reducer(state, action) {
     case 'DEL_TRANSFER':
       return { ...state, transferencias: state.transferencias.filter(t => t.id !== action.id), _lastAction: action.type }
     case 'ADD_FIXO':
-      return { ...state, fixos: [...state.fixos, { ...action.payload, id: state.nextId, ativo: true }], nextId: state.nextId + 1, _lastAction: action.type }
+      // criadoEm (LN-1): marca o mês a partir do qual o fixo passa a valer nas métricas mensais
+      return { ...state, fixos: [...state.fixos, { ...action.payload, id: state.nextId, ativo: true, criadoEm: toLocalISO(new Date()) }], nextId: state.nextId + 1, _lastAction: action.type }
     case 'EDIT_FIXO':
       return { ...state, fixos: state.fixos.map(f => f.id === action.payload.id ? { ...f, ...action.payload } : f), _lastAction: action.type }
     case 'TOGGLE_FIXO':
@@ -131,7 +132,8 @@ function reducer(state, action) {
     case 'DEL_META':
       return { ...state, metas: state.metas.filter(m => m.id !== action.id), _lastAction: action.type }
     case 'ADD_RECEITA_FIXA':
-      return { ...state, receitasFixas: [...(state.receitasFixas || []), { ...action.payload, id: state.nextId, ativo: true }], nextId: state.nextId + 1, _lastAction: action.type }
+      // criadoEm (LN-1): idem fixos — receita fixa só entra no mês do cadastro em diante
+      return { ...state, receitasFixas: [...(state.receitasFixas || []), { ...action.payload, id: state.nextId, ativo: true, criadoEm: toLocalISO(new Date()) }], nextId: state.nextId + 1, _lastAction: action.type }
     case 'EDIT_RECEITA_FIXA':
       return { ...state, receitasFixas: (state.receitasFixas || []).map(r => r.id === action.payload.id ? { ...r, ...action.payload } : r), _lastAction: action.type }
     case 'TOGGLE_RECEITA_FIXA':

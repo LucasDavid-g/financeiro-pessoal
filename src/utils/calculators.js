@@ -1,5 +1,30 @@
 import { getMonthKey } from './formatters.js'
 
+// Formata Date local como 'YYYY-MM-DD' sem conversão UTC.
+// Evita o deslocamento de 1 dia causado por .toISOString() em fusos UTC-negativo (ex: UTC-3).
+// Exportado para uso em componentes (Dashboard, Contas) que precisam da data local.
+export const toLocalISO = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// BUG-C03: garante que o dia solicitado é válido no mês informado.
+// Evita overflow: new Date(2024, 1, 31) vira 2 de março em vez de 29 de fevereiro.
+// Uso: new Date(year, month, clampDay(year, month, day))
+const clampDay = (year, month, day) => Math.min(day, new Date(year, month + 1, 0).getDate())
+
+// Data de ocorrência (vencimento) de um recorrente no mês (year, month), como 'YYYY-MM-DD'.
+const ocorrenciaISO = (year, month, dia) =>
+  `${year}-${String(month + 1).padStart(2, '0')}-${String(clampDay(year, month, dia)).padStart(2, '0')}`
+
+// LN-1: um recorrente (fixo/receita fixa) só passa a valer a partir do mês do seu cadastro.
+// Item com `dia`: só conta num mês se a data de vencimento nesse mês for >= criadoEm.
+// Item sem `dia`: conta a partir do mês de criadoEm (comparação por mês YYYY-MM).
+// Fallback: dados legados sem `criadoEm` contam sempre (comportamento anterior preservado).
+const nascidoAteOMes = (item, year, month) => {
+  if (!item.criadoEm) return true
+  if (!item.dia) return item.criadoEm.slice(0, 7) <= `${year}-${String(month + 1).padStart(2, '0')}`
+  return ocorrenciaISO(year, month, item.dia) >= item.criadoEm
+}
+
 export const getLancsDoMes = (lancamentos, year, month) =>
   lancamentos.filter((l) => l.mes === getMonthKey(year, month))
 
@@ -52,10 +77,10 @@ export const getMesData = (state, year, month) => {
   // quando o dia já chegou — antes disso, contam apenas na projeção (getSaldoProjetado).
   const hojeDia = new Date().getDate()
   const fixosVencidos = state.fixos
-    .filter(f => f.ativo && (!f.dia || f.dia <= hojeDia))
+    .filter(f => f.ativo && (!f.dia || f.dia <= hojeDia) && nascidoAteOMes(f, year, month))
     .reduce((s, f) => s + f.valor, 0)
   const recFixasVencidas = (state.receitasFixas || [])
-    .filter(r => r.ativo && (!r.dia || r.dia <= hojeDia))
+    .filter(r => r.ativo && (!r.dia || r.dia <= hojeDia) && nascidoAteOMes(r, year, month))
     .reduce((s, r) => s + r.valor, 0)
 
   const fixos    = getFixosTotal(state.fixos)
@@ -211,17 +236,6 @@ export const getSaldoProjetado = (state) => {
     + recFixasTotal
     + pendentesRec
 }
-
-// Formata Date local como 'YYYY-MM-DD' sem conversão UTC.
-// Evita o deslocamento de 1 dia causado por .toISOString() em fusos UTC-negativo (ex: UTC-3).
-// Exportado para uso em componentes (Dashboard, Contas) que precisam da data local.
-export const toLocalISO = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-// BUG-C03: garante que o dia solicitado é válido no mês informado.
-// Evita overflow: new Date(2024, 1, 31) vira 2 de março em vez de 29 de fevereiro.
-// Uso: new Date(year, month, clampDay(year, month, day))
-const clampDay = (year, month, day) => Math.min(day, new Date(year, month + 1, 0).getDate())
 
 // Ciclo real do cartão baseado na data de fechamento.
 // Fatura do ciclo atual = lançamentos manuais do ciclo + parcelas + fixos mensais vinculados.
