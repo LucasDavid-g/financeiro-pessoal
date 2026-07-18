@@ -39,7 +39,28 @@ const EMPTY = {
   _loaded: false, _lastAction: null,
 }
 
+// Fix 4 (QC-3/SEC-3): um valor monetário só é válido se for número finito e positivo.
+// Number.isFinite descarta NaN/Infinity; > 0 descarta zero e negativos.
+const valorValido = (v) => Number.isFinite(v) && v > 0
+
+// Actions cujo payload carrega um campo `valor` que precisa ser validado antes de persistir.
+const VALOR_ACTIONS = new Set([
+  'ADD_LANCAMENTO', 'EDIT_LANCAMENTO',
+  'ADD_TRANSFER',
+  'ADD_FIXO', 'EDIT_FIXO',
+  'ADD_PARCELA', 'EDIT_PARCELA',
+  'ADD_META', 'EDIT_META',
+  'ADD_RECEITA_FIXA', 'EDIT_RECEITA_FIXA',
+])
+
 function reducer(state, action) {
+  // Guarda de integridade: rejeita mutações com valor malformado (NaN, Infinity, <= 0)
+  // antes de tocar no estado. Defesa em profundidade — os formulários também validam,
+  // mas isto garante que dado corrompido nunca chega ao Firebase/localStorage.
+  if (VALOR_ACTIONS.has(action.type) && !valorValido(action.payload?.valor)) return state
+  // SET_ORCAMENTO aceita null (limpar orçamento) ou um valor positivo.
+  if (action.type === 'SET_ORCAMENTO' && action.valor !== null && !valorValido(action.valor)) return state
+
   switch (action.type) {
     case 'LOAD':
       return { ...EMPTY, ...action.payload, _loaded: true, _lastAction: null }

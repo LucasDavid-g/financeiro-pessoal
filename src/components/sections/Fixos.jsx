@@ -44,7 +44,7 @@ export function Fixos() {
   const opcoesCartoes    = contaOptions(state.contas, 'cartoes')
 
   const saveFixo = () => {
-    if (!fixoForm.desc || !fixoForm.valor) return setFixoErr('Preencha descrição e valor.')
+    if (!fixoForm.desc || !(parseFloat(fixoForm.valor) > 0)) return setFixoErr('Preencha descrição e um valor maior que zero.')
     setFixoErr('')
     const payload = {
       desc: fixoForm.desc,
@@ -60,7 +60,7 @@ export function Fixos() {
   }
 
   const saveParcela = () => {
-    if (!parcelaForm.desc || !parcelaForm.valor) return setParcelaErr('Preencha descrição e valor.')
+    if (!parcelaForm.desc || !(parseFloat(parcelaForm.valor) > 0)) return setParcelaErr('Preencha descrição e um valor maior que zero.')
     // Busca nome do cartão selecionado
     const cartaoConta = state.contas.find(c => c.id === parseInt(parcelaForm.cartaoId))
     const payload = {
@@ -79,7 +79,7 @@ export function Fixos() {
   }
 
   const saveRecFixa = () => {
-    if (!recFixaForm.desc || !recFixaForm.valor || !recFixaForm.dia) return setRecFixaErr('Preencha descrição, valor e dia.')
+    if (!recFixaForm.desc || !recFixaForm.dia || !(parseFloat(recFixaForm.valor) > 0)) return setRecFixaErr('Preencha descrição, dia e um valor maior que zero.')
     const dia = parseInt(recFixaForm.dia)
     if (dia < 1 || dia > 31) return setRecFixaErr('Dia deve ser entre 1 e 31.')
     setRecFixaErr('')
