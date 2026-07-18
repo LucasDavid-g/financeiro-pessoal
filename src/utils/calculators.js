@@ -93,12 +93,23 @@ export const getMesData = (state, year, month) => {
   const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
   // Fixos/receitas fixas com `dia` cadastrado só entram no saldo do mês atual
   // quando o dia já chegou — antes disso, contam apenas na projeção (getSaldoProjetado).
-  const hojeDia = new Date().getDate()
+  // LN-3: a "chegada" do vencimento é relativa ao mês consultado, não ao dia de hoje.
+  // Mês passado (já encerrado): todo vencimento do mês já ocorreu.
+  // Mês corrente: só conta se o dia já chegou (dia <= hoje) — futuros entram só na projeção.
+  // Mês futuro: nada foi realizado ainda.
+  const now = new Date()
+  const mesCorrente = year === now.getFullYear() && month === now.getMonth()
+  const mesPassado  = year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth())
+  const jaOcorreu = (dia) => {
+    if (mesPassado)   return true
+    if (!mesCorrente) return false            // mês futuro
+    return !dia || dia <= now.getDate()       // mês corrente
+  }
   const fixosVencidos = state.fixos
-    .filter(f => f.ativo && (!f.dia || f.dia <= hojeDia) && nascidoAteOMes(f, year, month))
+    .filter(f => f.ativo && jaOcorreu(f.dia) && nascidoAteOMes(f, year, month))
     .reduce((s, f) => s + f.valor, 0)
   const recFixasVencidas = (state.receitasFixas || [])
-    .filter(r => r.ativo && (!r.dia || r.dia <= hojeDia) && nascidoAteOMes(r, year, month))
+    .filter(r => r.ativo && jaOcorreu(r.dia) && nascidoAteOMes(r, year, month))
     .reduce((s, r) => s + r.valor, 0)
 
   const fixos    = getFixosTotal(state.fixos)
