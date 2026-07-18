@@ -1,20 +1,36 @@
 import { getMonthKey } from './formatters.js'
 
+// Formata Date local como 'YYYY-MM-DD' sem conversão UTC.
+// Evita o deslocamento de 1 dia causado por .toISOString() em fusos UTC-negativo (ex: UTC-3).
+// Exportado para uso em componentes (Dashboard, Contas) que precisam da data local.
+export const toLocalISO = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// BUG-C03: garante que o dia solicitado é válido no mês informado.
+// Evita overflow: new Date(2024, 1, 31) vira 2 de março em vez de 29 de fevereiro.
+// Uso: new Date(year, month, clampDay(year, month, day))
+const clampDay = (year, month, day) => Math.min(day, new Date(year, month + 1, 0).getDate())
+
+// Data de ocorrência (vencimento) de um recorrente no mês (year, month), como 'YYYY-MM-DD'.
+const ocorrenciaISO = (year, month, dia) =>
+  `${year}-${String(month + 1).padStart(2, '0')}-${String(clampDay(year, month, dia)).padStart(2, '0')}`
+
+// LN-1: um recorrente (fixo/receita fixa) só passa a valer a partir do mês do seu cadastro.
+// Item com `dia`: só conta num mês se a data de vencimento nesse mês for >= criadoEm.
+// Item sem `dia`: conta a partir do mês de criadoEm (comparação por mês YYYY-MM).
+// Fallback: dados legados sem `criadoEm` contam sempre (comportamento anterior preservado).
+const nascidoAteOMes = (item, year, month) => {
+  if (!item.criadoEm) return true
+  if (!item.dia) return item.criadoEm.slice(0, 7) <= `${year}-${String(month + 1).padStart(2, '0')}`
+  return ocorrenciaISO(year, month, item.dia) >= item.criadoEm
+}
+
 export const getLancsDoMes = (lancamentos, year, month) =>
   lancamentos.filter((l) => l.mes === getMonthKey(year, month))
 
 // ── Filtro por período (date range) ─────────────────────────────
 export const getLancsDoPeriodo = (lancamentos, inicio, fim) =>
   lancamentos.filter((l) => l.data >= inicio && l.data <= fim)
-
-export const getMetricasPeriodo = (state, inicio, fim) => {
-  const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
-  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
-  const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
-  const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
-  const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
-  return { receitas, despesas, invest, pendente, saldo: receitas - despesas - invest, lancs }
-}
 
 // Meses contidos num intervalo de datas
 export const getMesesNoPeriodo = (inicio, fim) => {
@@ -34,11 +50,86 @@ export const getMesesNoPeriodo = (inicio, fim) => {
 export const getFixosTotal = (fixos) =>
   fixos.filter((f) => f.ativo).reduce((sum, f) => sum + f.valor, 0)
 
+// LN-2: número da parcela corrente, derivado dos meses decorridos desde o cadastro
+// somados ao `atual` informado na criação. Sem criadoEm (legado), usa `atual` estático.
+export const parcelaAtualNoMes = (p, ref = new Date()) => {
+  if (!p.criadoEm) return p.atual || 1
+  const [cy, cm] = p.criadoEm.split('-').map(Number)
+  const mesesDecorridos = (ref.getFullYear() - cy) * 12 + (ref.getMonth() - (cm - 1))
+  return (p.atual || 1) + Math.max(0, mesesDecorridos)
+}
+
+// LN-2: uma parcela finita encerra quando a parcela corrente ultrapassa o total.
+// total >= 999 = recorrente (sem fim). Legado sem criadoEm nunca encerra sozinho
+// (fallback: preserva o comportamento anterior para dados existentes).
+export const parcelaEncerrada = (p, ref = new Date()) => {
+  if (!p.total || p.total >= 999) return false
+  if (!p.criadoEm) return false
+  return parcelaAtualNoMes(p, ref) > p.total
+}
+
 export const getParcelasTotal = (parcelas) =>
-  parcelas.reduce((sum, p) => sum + p.valor, 0)
+  parcelas.filter(p => !parcelaEncerrada(p)).reduce((sum, p) => sum + p.valor, 0)
 
 export const getReceitasFixasTotal = (receitasFixas = []) =>
   receitasFixas.filter(r => r.ativo).reduce((s, r) => s + r.valor, 0)
+
+// LN-4: fixos, receitas fixas e parcelas "realizados" dentro de um período arbitrário.
+// Usa a data de ocorrência mensal (dia de vencimento, ou dia 1 do mês para itens sem dia)
+// e só conta o que já se passou (occ <= hoje) — mesmo critério de "já ocorreu" do getMesData,
+// generalizado para qualquer intervalo de datas (não só o mês corrente).
+export const getFixosRecPeriodo = (state, inicio, fim) => {
+  const hoje  = toLocalISO(new Date())
+  const meses = getMesesNoPeriodo(inicio, fim)
+  let fixos = 0, recFixas = 0, parcelas = 0
+
+  meses.forEach(({ year, month }) => {
+    const occDefault = `${year}-${String(month + 1).padStart(2, '0')}-01`
+
+    state.fixos
+      .filter(f => f.ativo && nascidoAteOMes(f, year, month))
+      .forEach(f => {
+        const occ = f.dia ? ocorrenciaISO(year, month, f.dia) : occDefault
+        if (occ >= inicio && occ <= fim && occ <= hoje) fixos += f.valor
+      })
+
+    ;(state.receitasFixas || [])
+      .filter(r => r.ativo && nascidoAteOMes(r, year, month))
+      .forEach(r => {
+        const occ = r.dia ? ocorrenciaISO(year, month, r.dia) : occDefault
+        if (occ >= inicio && occ <= fim && occ <= hoje) recFixas += r.valor
+      })
+
+    // Parcelas não têm dia de vencimento próprio — aproxima a fatura mensal no dia 1.
+    state.parcelas
+      .filter(p => !parcelaEncerrada(p, new Date(year, month, 1)))
+      .forEach(p => {
+        if (occDefault >= inicio && occDefault <= fim && occDefault <= hoje) parcelas += p.valor
+      })
+  })
+
+  return { fixos, recFixas, parcelas }
+}
+
+export const getMetricasPeriodo = (state, inicio, fim) => {
+  const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
+  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
+  const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
+  const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
+  const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
+  // LN-4: economia/taxa de poupança agora consideram fixos, receitas fixas e parcelas já
+  // realizados no período — antes só somavam lançamentos avulsos, inflando artificialmente
+  // a economia percebida quando o usuário tinha fixos/parcelas comprometidos.
+  const { fixos: fixosRealizados, recFixas: recFixasRealizadas, parcelas: parcelasRealizadas } =
+    getFixosRecPeriodo(state, inicio, fim)
+  const receitasTotais = receitas + recFixasRealizadas
+  const despesasTotais = despesas + fixosRealizados + parcelasRealizadas
+  return {
+    receitas, despesas, invest, pendente, lancs,
+    fixosRealizados, recFixasRealizadas, parcelasRealizadas,
+    receitasTotais, saldo: receitasTotais - despesasTotais - invest,
+  }
+}
 
 export const getMesData = (state, year, month) => {
   const lancs    = getLancsDoMes(state.lancamentos, year, month)
@@ -50,12 +141,23 @@ export const getMesData = (state, year, month) => {
   const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
   // Fixos/receitas fixas com `dia` cadastrado só entram no saldo do mês atual
   // quando o dia já chegou — antes disso, contam apenas na projeção (getSaldoProjetado).
-  const hojeDia = new Date().getDate()
+  // LN-3: a "chegada" do vencimento é relativa ao mês consultado, não ao dia de hoje.
+  // Mês passado (já encerrado): todo vencimento do mês já ocorreu.
+  // Mês corrente: só conta se o dia já chegou (dia <= hoje) — futuros entram só na projeção.
+  // Mês futuro: nada foi realizado ainda.
+  const now = new Date()
+  const mesCorrente = year === now.getFullYear() && month === now.getMonth()
+  const mesPassado  = year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth())
+  const jaOcorreu = (dia) => {
+    if (mesPassado)   return true
+    if (!mesCorrente) return false            // mês futuro
+    return !dia || dia <= now.getDate()       // mês corrente
+  }
   const fixosVencidos = state.fixos
-    .filter(f => f.ativo && (!f.dia || f.dia <= hojeDia))
+    .filter(f => f.ativo && jaOcorreu(f.dia) && nascidoAteOMes(f, year, month))
     .reduce((s, f) => s + f.valor, 0)
   const recFixasVencidas = (state.receitasFixas || [])
-    .filter(r => r.ativo && (!r.dia || r.dia <= hojeDia))
+    .filter(r => r.ativo && jaOcorreu(r.dia) && nascidoAteOMes(r, year, month))
     .reduce((s, r) => s + r.valor, 0)
 
   const fixos    = getFixosTotal(state.fixos)
@@ -81,6 +183,26 @@ export const getContaSaldo = (state, contaId) => {
     if (t.destinoId === contaId) saldo += t.valor
   })
   return saldo
+}
+
+// LN-6: ao pagar uma despesa pendente que pertence a um CARTÃO, o pagamento vira uma
+// transferência conta-operacional → cartão. Isso mantém a despesa no histórico do cartão
+// (marcada como paga) e credita o cartão (abate a fatura), enquanto debita a conta que pagou.
+// Retorna a transferência a ser criada, ou null quando é despesa comum (pagamento direto).
+export const buildPagamentoTransfer = (state, lanc, contaPagamentoId, nextId) => {
+  const contaDespesa = state.contas.find(c => c.id === lanc.contaId)
+  if (contaDespesa?.tipo !== 'cartao' || !contaPagamentoId) return null
+  const hoje = toLocalISO(new Date())
+  return {
+    id: nextId,
+    desc: `Pagamento fatura · ${contaDespesa.nome}`,
+    origemId:  contaPagamentoId,
+    destinoId: lanc.contaId,
+    valor: lanc.valor,
+    data: hoje,
+    mes: hoje.slice(0, 7),
+    auto: true,   // marca origem automática (pagamento de fatura) para a UI diferenciar
+  }
 }
 
 export const getContaMesStats = (state, contaId, year, month) => {
@@ -173,7 +295,8 @@ export const getFaturaCartao = (state, contaId) => {
   const faturaLancs   = Math.max(0, -getContaSaldo(state, contaId))
   const parcelasCartao = state.parcelas
     // aceita cartaoId (numérico, schema novo) OU cartao (string, schema atual)
-    .filter(p => p.cartaoId === contaId || p.cartao === conta?.nome)
+    // LN-2: exclui parcelas já encerradas (parcela corrente > total)
+    .filter(p => (p.cartaoId === contaId || p.cartao === conta?.nome) && !parcelaEncerrada(p))
     .reduce((s, p) => s + p.valor, 0)
   const fixosCartao   = state.fixos
     .filter(f => f.ativo && f.contaId === contaId)
@@ -211,17 +334,6 @@ export const getSaldoProjetado = (state) => {
     + recFixasTotal
     + pendentesRec
 }
-
-// Formata Date local como 'YYYY-MM-DD' sem conversão UTC.
-// Evita o deslocamento de 1 dia causado por .toISOString() em fusos UTC-negativo (ex: UTC-3).
-// Exportado para uso em componentes (Dashboard, Contas) que precisam da data local.
-export const toLocalISO = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-// BUG-C03: garante que o dia solicitado é válido no mês informado.
-// Evita overflow: new Date(2024, 1, 31) vira 2 de março em vez de 29 de fevereiro.
-// Uso: new Date(year, month, clampDay(year, month, day))
-const clampDay = (year, month, day) => Math.min(day, new Date(year, month + 1, 0).getDate())
 
 // Ciclo real do cartão baseado na data de fechamento.
 // Fatura do ciclo atual = lançamentos manuais do ciclo + parcelas + fixos mensais vinculados.
@@ -261,8 +373,9 @@ export const getCicloCartao = (state, contaId) => {
   const preExistente = Math.max(0, -(getContaSaldo(state, contaId) + faturaLancs))
 
   // Parcelas mensais (schema duplo para retrocompatibilidade)
+  // LN-2: exclui parcelas já encerradas (parcela corrente > total)
   const mensaisParcelas = state.parcelas
-    .filter(p => p.cartaoId === contaId || p.cartao === conta.nome)
+    .filter(p => (p.cartaoId === contaId || p.cartao === conta.nome) && !parcelaEncerrada(p))
     .reduce((s, p) => s + p.valor, 0)
 
   // Fixos mensais vinculados ao cartão

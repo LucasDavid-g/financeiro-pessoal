@@ -63,7 +63,7 @@ export function Metas() {
   const [errEdit,  setErrEdit]  = useState('')
 
   const salvar = () => {
-    if (!form.nome || !form.valor) return setErrNova('Preencha nome e valor da meta.')
+    if (!form.nome || !(parseFloat(form.valor) > 0)) return setErrNova('Preencha nome e um valor de meta maior que zero.')
     setErrNova('')
     dispatch({
       type: 'ADD_META',
@@ -90,7 +90,7 @@ export function Metas() {
   }
 
   const salvarEdicao = () => {
-    if (!editForm.nome || !editForm.valor) return setErrEdit('Preencha nome e valor da meta.')
+    if (!editForm.nome || !(parseFloat(editForm.valor) > 0)) return setErrEdit('Preencha nome e um valor de meta maior que zero.')
     setErrEdit('')
     const { v, m } = calcMeta(editForm.valor, atualEdit, editForm.mensal)
     dispatch({

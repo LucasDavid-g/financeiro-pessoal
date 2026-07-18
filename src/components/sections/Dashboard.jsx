@@ -98,10 +98,12 @@ export function Dashboard() {
 
   // Métricas do período selecionado
   const metricas    = getMetricasPeriodo(state, inicio, fim)
-  const { receitas, despesas, invest, pendente, saldo: saldoMes, lancs } = metricas
+  const { receitas, despesas, invest, pendente, lancs, receitasTotais } = metricas
 
-  const economia     = receitas - despesas - invest
-  const taxaPoupanca = receitas > 0 ? Math.round((economia / receitas) * 100) : 0
+  // LN-4: economia/taxa de poupança consideram fixos e parcelas já realizados no período
+  // (metricas.saldo), não só lançamentos avulsos — consistente com getMesData.
+  const economia     = metricas.saldo
+  const taxaPoupanca = receitasTotais > 0 ? Math.round((economia / receitasTotais) * 100) : 0
 
   // ── saldosPorConta — calculado UMA vez por render, elimina ~70 chamadas redundantes ──
   // Cada getCicloCartao / donut / legenda precisaria recalcular O(n_lancamentos) individualmente.
@@ -309,10 +311,12 @@ export function Dashboard() {
   }, [state.contas, saldosPorConta])
 
   // ── Gráfico: Composição de gastos ────────────────────────────────
+  // LN-5: `despesas` (getMetricasPeriodo) já é só avulsas — nunca incluiu fixos/parcelas,
+  // então a subtração antiga zerava "Variável" sempre que fixos+parcelas > despesas avulsas.
   const donutGastos = useMemo(() => ({
     labels: ['Fixos', 'Parcelas', 'Variável'],
     datasets: [{
-      data: [fixosTotal, parcelasTotal, Math.max(0, despesas - fixosTotal - parcelasTotal)],
+      data: [fixosTotal, parcelasTotal, despesas],
       backgroundColor: ['#10B981','#3B82F6','#F59E0B'],
       borderWidth: 2, borderColor: 'transparent', hoverOffset: 4,
     }],
@@ -323,7 +327,7 @@ export function Dashboard() {
     plugins: { legend: { display: false }, tooltip: { ...tooltipStyle } },
   }
 
-  const totalGastos = fixosTotal + parcelasTotal + Math.max(0, despesas - fixosTotal - parcelasTotal)
+  const totalGastos = fixosTotal + parcelasTotal + despesas
 
   return (
     <div className={`dash-grid ${styles.dashboard}`}>
@@ -597,7 +601,7 @@ export function Dashboard() {
               <Doughnut data={donutGastos} options={donutOpts} />
             </div>
             <div className={styles.donutLegend}>
-              {[['#10B981','Fixos',fixosTotal],['#3B82F6','Parcelas',parcelasTotal],['#F59E0B','Variável',Math.max(0,despesas-fixosTotal-parcelasTotal)]]
+              {[['#10B981','Fixos',fixosTotal],['#3B82F6','Parcelas',parcelasTotal],['#F59E0B','Variável',despesas]]
                 .map(([color,label,val]) => (
                   <div key={label} className={styles.donutItem}>
                     <div className={styles.donutDot} style={{ background: color }} />

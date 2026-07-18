@@ -35,6 +35,7 @@ export function Extrato({ filtrosIniciais = {} }) {
   const { period, setPreset, setRange } = usePeriod()
   const { inicio, fim } = period
 
+  const [aba,           setAba]           = useState('lancamentos')  // 'lancamentos' | 'transferencias'
   const [busca,         setBusca]         = useState('')
   const [tipo,          setTipo]          = useState('')
   const [contaId,       setContaId]       = useState(filtrosIniciais.contaId ? String(filtrosIniciais.contaId) : '')
@@ -42,6 +43,14 @@ export function Extrato({ filtrosIniciais = {} }) {
   const [showRelatorio, setShowRelatorio] = useState(false)
   const [pagando,       setPagando]       = useState(null)
   const [editando,      setEditando]      = useState(null)
+
+  // Transferências do mesmo período selecionado (inclui pagamentos de fatura LN-6, flag `auto`)
+  const transfers = useMemo(
+    () => state.transferencias
+      .filter(t => t.data >= inicio && t.data <= fim)
+      .sort((a, b) => b.data.localeCompare(a.data)),
+    [state.transferencias, inicio, fim]
+  )
 
   const filtered = useMemo(() => {
     let data = getLancsDoPeriodo(state.lancamentos, inicio, fim)
@@ -99,19 +108,82 @@ export function Extrato({ filtrosIniciais = {} }) {
       <div className={styles.pageHeader}>
         <div>
           <h2 className={styles.pageTitle}>Extrato</h2>
-          <p className={styles.pageSub}>{filtered.length} transações encontradas</p>
+          <p className={styles.pageSub}>
+            {aba === 'lancamentos'
+              ? `${filtered.length} transações encontradas`
+              : `${transfers.length} transferência${transfers.length !== 1 ? 's' : ''} no período`}
+          </p>
         </div>
-        <div className={styles.exportBtns}>
-          <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, inicio, fim, {})}>CSV</Button>
-          <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, inicio, fim, {})}>PDF</Button>
-        </div>
+        {aba === 'lancamentos' && (
+          <div className={styles.exportBtns}>
+            <Button variant="ghost" icon="ti-download" onClick={() => exportToCSV(state.lancamentos, state.contas, inicio, fim, {})}>CSV</Button>
+            <Button variant="ghost" icon="ti-printer"  onClick={() => exportToPDF(state.lancamentos, state.contas, inicio, fim, {})}>PDF</Button>
+          </div>
+        )}
       </div>
 
-      {/* Filtro de período */}
+      {/* Toggle Lançamentos | Transferências */}
+      <div className={styles.sortRow} style={{ marginBottom: 12 }}>
+        <button
+          onClick={() => setAba('lancamentos')}
+          className={[styles.sortChip, aba === 'lancamentos' ? styles.sortChipActive : ''].join(' ')}
+        >
+          <i className="ti ti-receipt" style={{ marginRight: 6 }} />Lançamentos
+        </button>
+        <button
+          onClick={() => setAba('transferencias')}
+          className={[styles.sortChip, aba === 'transferencias' ? styles.sortChipActive : ''].join(' ')}
+        >
+          <i className="ti ti-arrow-left-right" style={{ marginRight: 6 }} />Transferências
+        </button>
+      </div>
+
+      {/* Filtro de período (compartilhado entre as abas) */}
       <div className={styles.periodWrap}>
         <PeriodFilter period={period} onPreset={setPreset} onRange={setRange} />
-        <span className={styles.periodCount}>{filtered.length} lançamentos</span>
+        <span className={styles.periodCount}>
+          {aba === 'lancamentos' ? `${filtered.length} lançamentos` : `${transfers.length} transferências`}
+        </span>
       </div>
+
+      {aba === 'transferencias' ? (
+        /* ── Aba Transferências ── */
+        transfers.length > 0 ? (
+          <div className={styles.dateGroup}>
+            {transfers.map(t => {
+              const orig = state.contas.find(c => c.id === t.origemId)
+              const dest = state.contas.find(c => c.id === t.destinoId)
+              return (
+                <div key={t.id} className={styles.lancItem}>
+                  <div className={styles.lancIcon} style={{ background: t.auto ? 'var(--b50)' : 'var(--color-surface2)', color: t.auto ? 'var(--b400)' : 'var(--color-text3)' }}>
+                    <i className={`ti ${t.auto ? 'ti-credit-card' : 'ti-arrow-left-right'}`} />
+                  </div>
+                  <div className={styles.lancInfo}>
+                    <span className={styles.lancDesc}>
+                      {t.desc || 'Transferência'}
+                      {t.auto && <Badge variant="b" style={{ marginLeft: 6 }}>fatura</Badge>}
+                    </span>
+                    <span className={styles.lancSub}>
+                      {orig ? contaLabel(orig) : '?'} → {dest ? contaLabel(dest) : '?'} · {t.data}
+                    </span>
+                  </div>
+                  <div className={styles.lancRight}>
+                    <span className={styles.lancVal}>{fmt(t.valor)}</span>
+                    <div className={styles.lancActions}>
+                      <button className={styles.delBtn} onClick={() => dispatch({ type: 'DEL_TRANSFER', id: t.id })} title="Excluir">
+                        <i className="ti ti-trash" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState message="Nenhuma transferência no período selecionado" icon="ti-arrow-left-right" />
+        )
+      ) : (
+      <>
 
       {/* KPI Strip */}
       <div className={styles.kpiRow}>
@@ -261,6 +333,8 @@ export function Extrato({ filtrosIniciais = {} }) {
         )
       }) : (
         <EmptyState message="Nenhum lançamento no período selecionado" icon="ti-receipt" />
+      )}
+      </>
       )}
 
       <PagarModal lancamento={pagando} onClose={() => setPagando(null)} />

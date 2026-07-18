@@ -38,8 +38,8 @@ export function Lancamentos() {
   }
 
   const handleSubmit = () => {
-    if (!form.desc || !form.valor || !form.data) {
-      setErrMsg('Preencha descrição, valor e data.')
+    if (!form.desc || !form.data || !(parseFloat(form.valor) > 0)) {
+      setErrMsg('Preencha descrição, data e um valor maior que zero.')
       return
     }
     setErrMsg('')

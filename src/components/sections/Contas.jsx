@@ -133,7 +133,7 @@ export function Contas({ onNavigate = () => {} }) {
 
   const saveTransfer = () => {
     const oId = parseInt(trForm.origemId), dId = parseInt(trForm.destinoId)
-    if (!trForm.valor || !trForm.data) return setTrErr('Preencha valor e data.')
+    if (!(parseFloat(trForm.valor) > 0) || !trForm.data) return setTrErr('Preencha uma data e um valor maior que zero.')
     if (oId === dId || (!oId && !dId)) return setTrErr('Selecione contas diferentes.')
     setTrErr('')
     dispatch({ type: 'ADD_TRANSFER', payload: { desc: trForm.desc, origemId: oId, destinoId: dId, valor: parseFloat(trForm.valor), data: trForm.data } })
