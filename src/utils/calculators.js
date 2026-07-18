@@ -32,15 +32,6 @@ export const getLancsDoMes = (lancamentos, year, month) =>
 export const getLancsDoPeriodo = (lancamentos, inicio, fim) =>
   lancamentos.filter((l) => l.data >= inicio && l.data <= fim)
 
-export const getMetricasPeriodo = (state, inicio, fim) => {
-  const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
-  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
-  const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
-  const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
-  const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
-  return { receitas, despesas, invest, pendente, saldo: receitas - despesas - invest, lancs }
-}
-
 // Meses contidos num intervalo de datas
 export const getMesesNoPeriodo = (inicio, fim) => {
   const meses = []
@@ -82,6 +73,63 @@ export const getParcelasTotal = (parcelas) =>
 
 export const getReceitasFixasTotal = (receitasFixas = []) =>
   receitasFixas.filter(r => r.ativo).reduce((s, r) => s + r.valor, 0)
+
+// LN-4: fixos, receitas fixas e parcelas "realizados" dentro de um período arbitrário.
+// Usa a data de ocorrência mensal (dia de vencimento, ou dia 1 do mês para itens sem dia)
+// e só conta o que já se passou (occ <= hoje) — mesmo critério de "já ocorreu" do getMesData,
+// generalizado para qualquer intervalo de datas (não só o mês corrente).
+export const getFixosRecPeriodo = (state, inicio, fim) => {
+  const hoje  = toLocalISO(new Date())
+  const meses = getMesesNoPeriodo(inicio, fim)
+  let fixos = 0, recFixas = 0, parcelas = 0
+
+  meses.forEach(({ year, month }) => {
+    const occDefault = `${year}-${String(month + 1).padStart(2, '0')}-01`
+
+    state.fixos
+      .filter(f => f.ativo && nascidoAteOMes(f, year, month))
+      .forEach(f => {
+        const occ = f.dia ? ocorrenciaISO(year, month, f.dia) : occDefault
+        if (occ >= inicio && occ <= fim && occ <= hoje) fixos += f.valor
+      })
+
+    ;(state.receitasFixas || [])
+      .filter(r => r.ativo && nascidoAteOMes(r, year, month))
+      .forEach(r => {
+        const occ = r.dia ? ocorrenciaISO(year, month, r.dia) : occDefault
+        if (occ >= inicio && occ <= fim && occ <= hoje) recFixas += r.valor
+      })
+
+    // Parcelas não têm dia de vencimento próprio — aproxima a fatura mensal no dia 1.
+    state.parcelas
+      .filter(p => !parcelaEncerrada(p, new Date(year, month, 1)))
+      .forEach(p => {
+        if (occDefault >= inicio && occDefault <= fim && occDefault <= hoje) parcelas += p.valor
+      })
+  })
+
+  return { fixos, recFixas, parcelas }
+}
+
+export const getMetricasPeriodo = (state, inicio, fim) => {
+  const lancs    = getLancsDoPeriodo(state.lancamentos, inicio, fim)
+  const receitas = lancs.filter((l) => l.tipo === 'receita' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
+  const despesas = lancs.filter((l) => l.tipo === 'despesa' && l.status !== 'pendente').reduce((s, l) => s + l.valor, 0)
+  const invest   = lancs.filter((l) => l.tipo === 'investimento').reduce((s, l) => s + l.valor, 0)
+  const pendente = lancs.filter((l) => l.tipo === 'despesa' && l.status === 'pendente').reduce((s, l) => s + l.valor, 0)
+  // LN-4: economia/taxa de poupança agora consideram fixos, receitas fixas e parcelas já
+  // realizados no período — antes só somavam lançamentos avulsos, inflando artificialmente
+  // a economia percebida quando o usuário tinha fixos/parcelas comprometidos.
+  const { fixos: fixosRealizados, recFixas: recFixasRealizadas, parcelas: parcelasRealizadas } =
+    getFixosRecPeriodo(state, inicio, fim)
+  const receitasTotais = receitas + recFixasRealizadas
+  const despesasTotais = despesas + fixosRealizados + parcelasRealizadas
+  return {
+    receitas, despesas, invest, pendente, lancs,
+    fixosRealizados, recFixasRealizadas, parcelasRealizadas,
+    receitasTotais, saldo: receitasTotais - despesasTotais - invest,
+  }
+}
 
 export const getMesData = (state, year, month) => {
   const lancs    = getLancsDoMes(state.lancamentos, year, month)
