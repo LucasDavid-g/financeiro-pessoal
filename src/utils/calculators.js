@@ -304,9 +304,26 @@ export const getFaturaCartao = (state, contaId) => {
   return faturaLancs + parcelasCartao + fixosCartao
 }
 
-// Saldo projetado = disponível - todas as despesas fixas - parcelas - pendentes + receitas fixas + receitas pendentes
+// LN-7: total das faturas atuais de cartão para a projeção — SOMENTE o componente de
+// compras avulsas já lançadas (= saldo devedor do cartão, faturaLancs de getFaturaCartao).
+//
+// Deliberadamente NÃO usa getFaturaCartao inteiro: os componentes de parcelas e fixos do
+// cartão já são subtraídos em getSaldoProjetado via parcelasTotal (todas) e fixosTotal
+// (todos os fixos, inclusive os de cartão). Somar getFaturaCartao cheio contaria parcelas
+// e fixos de cartão duas vezes — exatamente a dupla contagem a evitar.
+//
+// faturaLancs vem de getContaSaldo, que exclui pendentes (esses já entram em getTotalPendente)
+// e reflete pagamentos de fatura LN-6 (transferência credita o cartão, reduzindo o saldo devedor).
+export const getFaturasCartaoTotal = (state) =>
+  state.contas
+    .filter(c => c.tipo === 'cartao')
+    .reduce((s, c) => s + Math.max(0, -getContaSaldo(state, c.id)), 0)
+
+// Saldo projetado = disponível - fixos - parcelas - pendentes - faturas de cartão + receitas fixas + receitas pendentes
 // Fixos vinculados a cartão são despesas reais do próximo ciclo (saem pelo pagamento da fatura) e
 // devem entrar na projeção. Parcelas mensais também, pelo mesmo motivo.
+// LN-7: as compras avulsas já lançadas no cartão (faturaLancs) também sairão do disponível quando
+// a fatura for paga — entram via getFaturasCartaoTotal (sem duplicar parcelas/fixos de cartão).
 export const getSaldoProjetado = (state) => {
   // Todas as despesas fixas ativas, incluindo as vinculadas a cartão
   const fixosTotal = state.fixos
@@ -327,10 +344,14 @@ export const getSaldoProjetado = (state) => {
   // Lançamentos avulsos pendentes (receitas futuras)
   const pendentesRec = getTotalReceitasPendentes(state)
 
+  // LN-7: faturas atuais de cartão (só avulsas — parcelas/fixos de cartão já contam acima)
+  const faturasCartao = getFaturasCartaoTotal(state)
+
   return getSaldoDisponivel(state)
     - fixosTotal
     - parcelasTotal
     - pendentesDesp
+    - faturasCartao
     + recFixasTotal
     + pendentesRec
 }
