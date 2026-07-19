@@ -5,6 +5,7 @@ const TABS = [
   { id: 'contas',      icon: 'ti-building-bank',     label: 'Contas'     },
   { id: 'lancamentos', icon: 'ti-circle-plus',        label: 'Lançar'     },
   { id: 'extrato',     icon: 'ti-list-search',        label: 'Extrato'    },
+  { id: 'importar',    icon: 'ti-file-import',        label: 'Importar'   },
   { id: 'fixos',       icon: 'ti-repeat',             label: 'Fixos'      },
   { id: 'metas',       icon: 'ti-target',             label: 'Metas'      },
 ]

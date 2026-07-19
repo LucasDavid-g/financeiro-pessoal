@@ -7,6 +7,7 @@ import { Dashboard }   from './components/sections/Dashboard.jsx'
 import { Contas }      from './components/sections/Contas.jsx'
 import { Lancamentos } from './components/sections/Lancamentos.jsx'
 import { Extrato }     from './components/sections/Extrato.jsx'
+import { Importar }    from './components/sections/Importar.jsx'
 import { Fixos }       from './components/sections/Fixos.jsx'
 import { Metas }       from './components/sections/Metas.jsx'
 import { Login }       from './components/sections/Login.jsx'
@@ -17,6 +18,8 @@ import './styles/globals.css'
 function AppContent() {
   const [activeTab,      setActiveTab]      = useState('dashboard')
   const [filtrosExtrato, setFiltrosExtrato] = useState({})
+  // Estado de "desfazer importação" vive no pai — sobrevive à troca de abas (Importar é desmontado)
+  const [importUndo,     setImportUndo]     = useState(null)
   const { theme, toggle }         = useTheme()
   const { status, user, login, logout } = useAuth()
 
@@ -63,6 +66,7 @@ function AppContent() {
     contas:      <Contas onNavigate={onNavigate} />,
     lancamentos: <Lancamentos />,
     extrato:     <Extrato key={filtrosExtrato.contaId ?? 'all'} filtrosIniciais={filtrosExtrato} />,
+    importar:    <Importar onNavigate={onNavigate} undo={importUndo} setUndo={setImportUndo} />,
     fixos:       <Fixos />,
     metas:       <Metas />,
   }

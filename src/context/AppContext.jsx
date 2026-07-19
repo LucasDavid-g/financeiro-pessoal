@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react'
 import { saveUserData, loadUserData, onAuthChange, getCurrentUser } from '../services/firebase.js'
 import { getContaSaldo, toLocalISO, buildPagamentoTransfer } from '../utils/calculators.js'
+import { deriveStatus } from '../utils/lancamento.js'
 
 // Efetiva automaticamente lançamentos pendentes cuja data já chegou/passou —
 // cobre o cenário "a data chegou e o app não atualizou" sem exigir confirmação manual.
@@ -29,7 +30,7 @@ const SYNC_ACTIONS = new Set([
   'ADD_META', 'DEL_META', 'EDIT_META',
   'PAGAR_COMPROMISSO', 'RECEBER_RECEITA', 'AUTO_EFETIVAR_PENDENTES',
   'ADD_RECEITA_FIXA', 'EDIT_RECEITA_FIXA', 'TOGGLE_RECEITA_FIXA', 'DEL_RECEITA_FIXA',
-  'SET_ORCAMENTO',
+  'SET_ORCAMENTO', 'IMPORT_LANCAMENTOS',
 ])
 
 const EMPTY = {
@@ -90,6 +91,27 @@ function reducer(state, action) {
       const l = state.lancamentos.find(x => x.id === action.id)
       const reserva = l?.tipo === 'investimento' ? Math.max(0, state.reserva - l.valor) : state.reserva
       return { ...state, lancamentos: state.lancamentos.filter(x => x.id !== action.id), reserva, _lastAction: action.type }
+    }
+    case 'IMPORT_LANCAMENTOS': {
+      // Importação em lote atômica: ou todos entram, ou nenhum.
+      // payload = array de lançamentos já validados/revisados pela UI ({ data, desc, valor, cat, tipo, contaId? }).
+      const entradas = Array.isArray(action.payload) ? action.payload : []
+      if (entradas.length === 0) return state
+      // Fail safe: se QUALQUER valor for malformado, rejeita o lote inteiro (não importa parcial).
+      if (!entradas.every(l => valorValido(l.valor) && typeof l.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(l.data))) return state
+      const novos = entradas.map((l, i) => ({
+        ...l,
+        id: state.nextId + i,
+        mes: l.data.slice(0, 7),
+        status: deriveStatus(l.tipo, l.data),   // futura = pendente; senão pago (regra universal)
+        importado: true,                        // marca a origem (permite filtrar "só importados")
+      }))
+      return {
+        ...state,
+        lancamentos: [...state.lancamentos, ...novos],
+        nextId: state.nextId + novos.length,
+        _lastAction: action.type,
+      }
     }
     case 'ADD_CONTA':
       return { ...state, contas: [...state.contas, { ...action.payload, id: state.nextId }], nextId: state.nextId + 1, _lastAction: action.type }
