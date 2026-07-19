@@ -11,7 +11,7 @@ import {
   getSaldoDisponivel, getTotalPendente, getSaldoReal,
   getCompromissosPendentes, getContaSaldo, getMesData,
   getDiasReserva, getBurnRate, getSaldoProjetado, getProximasSaidas, getProximosVencimentos,
-  getReceitasPendentes, getTotalReceitasPendentes,
+  getReceitasPendentes, getTotalReceitasPendentes, getFaturasCartaoTotal,
   toLocalISO,
 } from '../../utils/calculators.js'
 import { fmt, fmtCompact } from '../../utils/formatters.js'
@@ -119,6 +119,7 @@ export function Dashboard() {
   const investido     = getInvestidoTotal(state)
   const fixosTotal    = getFixosTotal(state.fixos)
   const parcelasTotal = getParcelasTotal(state.parcelas)
+  const faturasCartao = getFaturasCartaoTotal(state)   // LN-7: avulsas do cartão na projeção
 
   // Despesas avulsas lançadas em contas do tipo cartão (subconjunto de `despesas`)
   const gastosCartao = useMemo(() =>
@@ -684,6 +685,7 @@ export function Dashboard() {
               <span style={{ color: 'var(--r400)' }}>- {fmt(totalPendente)} pendentes</span>
               <span style={{ color: 'var(--r400)' }}>- {fmt(fixosTotal)} fixos mensais</span>
               <span style={{ color: 'var(--r400)' }}>- {fmt(parcelasTotal)} parcelas mensais</span>
+              {faturasCartao > 0 && <span style={{ color: 'var(--r400)' }}>- {fmt(faturasCartao)} faturas de cartão</span>}
             </div>
           </div>
         </div>
