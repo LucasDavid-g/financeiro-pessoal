@@ -293,9 +293,9 @@ export function detectarDuplicata(transacao, lancamentosExistentes) {
 }
 
 // ── 7. Categorização automática ────────────────────────────────────────
-// NOTA: o app tem CATEGORIES = alimentação/moradia/transporte/saúde/lazer/pets/
-// assinatura/cartão/outro. "compras" e "transferência" NÃO existem, então
-// mapeamos para 'outro' (com confiança média/baixa = sinal de revisão).
+// Categorias devem existir em CATEGORIES (data/defaults.js) para que o select de
+// revisão e os ícones/cores do app funcionem. 'transferência' fica com confiança
+// baixa de propósito: o sentido (envio/recebimento) precisa de revisão humana.
 const REGRAS_CAT = [
   // estorno primeiro: "ESTORNO COMPRA SHOPEE" é receita, não compras
   { kws: ['estorno', 'cashback', 'reembolso'],                          cat: 'outro',       tipo: 'receita', conf: 'media' },
@@ -303,8 +303,8 @@ const REGRAS_CAT = [
   { kws: ['netflix', 'spotify', 'disney', 'hbo', 'amazon prime', 'prime video', 'youtube premium'], cat: 'assinatura', tipo: 'despesa', conf: 'alta' },
   { kws: ['uber', '99', 'cabify', 'shell', 'posto', 'ipiranga', 'petrobras'], cat: 'transporte', tipo: 'despesa', conf: 'alta' },
   { kws: ['farmacia', 'drogaria', 'raia', 'drogasil', 'pacheco', 'academia', 'smartfit', 'smart fit', 'gympass', 'totalpass'], cat: 'saúde', tipo: 'despesa', conf: 'alta' },
-  { kws: ['shopee', 'amazon', 'mercado livre', 'mercadolivre', 'magalu', 'aliexpress'], cat: 'outro', tipo: 'despesa', conf: 'media' }, // "compras"
-  { kws: ['pix', 'ted', 'doc', 'transferencia'],                        cat: 'outro',       tipo: 'despesa', conf: 'baixa' }, // "transferência" → revisar
+  { kws: ['shopee', 'amazon', 'mercado livre', 'mercadolivre', 'magalu', 'aliexpress'], cat: 'compras', tipo: 'despesa', conf: 'alta' },
+  { kws: ['pix', 'ted', 'doc', 'transferencia'],                        cat: 'transferência', tipo: 'despesa', conf: 'baixa' }, // sentido precisa de revisão
   { kws: ['iof', 'juros', 'multa', 'tarifa', 'anuidade'],               cat: 'outro',       tipo: 'despesa', conf: 'baixa' }, // taxas → revisar
 ]
 

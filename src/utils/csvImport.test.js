@@ -153,10 +153,20 @@ test('iFood → alimentação alta', () => {
   assert.equal(r.confianca, 'alta')
   assert.equal(r.tipo, 'despesa')
 })
-test('PIX ENVIADO → outro, confiança baixa (revisar)', () => {
+test('PIX ENVIADO → transferência, confiança baixa (revisar)', () => {
   const r = categorizarAuto('PIX ENVIADO 11987654321')
   assert.equal(r.confianca, 'baixa')
-  assert.equal(r.cat, 'outro')
+  assert.equal(r.cat, 'transferência')
+})
+test('Shopee → compras', () => {
+  assert.equal(categorizarAuto('SHOPEE *PEDIDO 123').cat, 'compras')
+})
+test('categorias sugeridas existem em CATEGORIES', async () => {
+  const { CATEGORIES } = await import('../data/defaults.js')
+  const amostras = ['IFOOD*X', 'SHOPEE', 'PIX ENVIADO', 'NETFLIX', 'UBER *TRIP', 'DROGARIA', 'IOF', '']
+  for (const d of amostras) {
+    assert.ok(CATEGORIES.includes(categorizarAuto(d).cat), `cat inválida para "${d}": ${categorizarAuto(d).cat}`)
+  }
 })
 test('ESTORNO → receita (não compras)', () => {
   const r = categorizarAuto('ESTORNO COMPRA SHOPEE')

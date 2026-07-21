@@ -37,8 +37,10 @@ export const CAT_CONFIG = {
   saúde:       { color: '#D4537E', bg: '#FBEAF0', icon: 'ti-heart'        },
   lazer:       { color: '#7F77DD', bg: '#EEEDFE', icon: 'ti-music'        },
   pets:        { color: '#EF9F27', bg: '#FAEEDA', icon: 'ti-paw'          },
+  compras:     { color: '#1F8A93', bg: '#E0F2F3', icon: 'ti-shopping-bag' },
   assinatura:  { color: '#639922', bg: '#EAF3DE', icon: 'ti-refresh'      },
   cartão:      { color: '#E24B4A', bg: '#FCEBEB', icon: 'ti-credit-card'  },
+  transferência:{ color: '#5A6B8C', bg: '#EAEEF5', icon: 'ti-arrow-left-right' },
   outro:       { color: '#888780', bg: '#F1EFE8', icon: 'ti-dots'         },
   receita:     { color: '#1D9E75', bg: '#E1F5EE', icon: 'ti-arrow-down-left' },
   investimento:{ color: '#085041', bg: '#E1F5EE', icon: 'ti-trending-up'  },
@@ -52,7 +54,7 @@ export const ACCOUNT_COLORS = [
 export const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 export const MONTHS_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-export const CATEGORIES = ['alimentação','moradia','transporte','saúde','lazer','pets','assinatura','cartão','outro'];
+export const CATEGORIES = ['alimentação','moradia','transporte','saúde','lazer','pets','compras','assinatura','cartão','transferência','outro'];
 
 export const RECEITA_CATEGORIES = [
   { id: 'salario',    label: 'Salário',           icon: 'ti-briefcase'      },
